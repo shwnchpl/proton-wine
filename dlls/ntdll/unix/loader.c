@@ -351,6 +351,7 @@ static void * const syscalls[] =
     NtWriteFileGather,
     NtWriteVirtualMemory,
     NtYieldExecution,
+    __wine_dbg_mark,
     __wine_dbg_write,
     __wine_unix_call,
     __wine_unix_spawnvp,

@@ -81,6 +81,7 @@ static struct dbg_config mark_config = {
 static BOOL init_done;
 static BOOL option_init_done = FALSE;
 static struct debug_info initial_info;  /* debug info for initial thread */
+static int mark_fd = -1;
 
 static const char * const debug_classes[] = { "fixme", "err", "warn", "trace" };
 
@@ -300,6 +301,17 @@ int WINAPI __wine_dbg_write( const char *str, unsigned int len )
 }
 
 /***********************************************************************
+ *		__wine_dbg_mark  (NTDLL.@)
+ */
+int WINAPI __wine_dbg_mark( const char *str, unsigned int len )
+{
+    if (mark_fd < 0)
+        return -1;
+
+    return write( mark_fd, str, len );
+}
+
+/***********************************************************************
  *		__wine_dbg_log_output  (NTDLL.@)
  */
 int __cdecl __wine_dbg_log_output( const char *str )
@@ -368,6 +380,7 @@ int __cdecl __wine_dbg_header( enum __wine_debug_class cls, struct __wine_debug_
 void dbg_init(void)
 {
     struct __wine_debug_option *options, default_option = { 0 };
+    const char *marker_path;
 
     setbuf( stdout, NULL );
     setbuf( stderr, NULL );
@@ -386,6 +399,11 @@ void dbg_init(void)
     free( mark_config.opts );
     mark_config.opts = &options[log_config.opts_cnt + 1];
     mark_config.opts[mark_config.opts_cnt] = default_option;
+
+    marker_path = getenv("WINE_TRACE_MARKER");
+    if (!marker_path)
+        marker_path = "/sys/kernel/tracing/trace_marker";
+    mark_fd = open(marker_path, O_WRONLY | O_APPEND);
 
     init_done = TRUE;
 }

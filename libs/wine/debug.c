@@ -280,6 +280,13 @@ int wine_dbg_log_obsolete( enum __wine_debug_class cls, struct __wine_debug_chan
 }
 
 
+int wine_dbg_mark_obsolete( enum __wine_debug_class cls, struct __wine_debug_channel *channel,
+                            const char *func, const char *format, ... )
+{
+    return -1;
+}
+
+
 /* allocate some tmp string space */
 /* FIXME: this is not 100% thread-safe */
 static char *get_temp_buffer( size_t size )
@@ -467,6 +474,7 @@ __ASM_OBSOLETE(__wine_dbg_get_channel_flags);
 __ASM_OBSOLETE(__wine_dbg_set_channel_flags);
 __ASM_OBSOLETE(__wine_dbg_set_functions);
 __ASM_OBSOLETE(wine_dbg_log);
+__ASM_OBSOLETE(wine_dbg_mark);
 __ASM_OBSOLETE(wine_dbg_printf);
 __ASM_OBSOLETE(wine_dbg_sprintf);
 __ASM_OBSOLETE(wine_dbgstr_an);

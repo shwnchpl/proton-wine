@@ -155,6 +155,7 @@ enum  __wine_debug_target
 
 #endif  /* !__GNUC__ && !__SUNPRO_C */
 
+extern int WINAPI __wine_dbg_mark( const char *str, unsigned int len );
 extern int WINAPI __wine_dbg_write( const char *str, unsigned int len );
 
 extern unsigned char __cdecl __wine_dbg_get_channel_flags( struct __wine_debug_channel *channel,

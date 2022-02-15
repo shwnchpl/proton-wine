@@ -316,6 +316,17 @@ NTSTATUS WINAPI wow64___wine_dbg_write( UINT *args )
     return __wine_dbg_write( str, len );
 }
 
+/**********************************************************************
+ *           wow64___wine_dbg_mark
+ */
+NTSTATUS WINAPI wow64___wine_dbg_mark( UINT *args )
+{
+    const char *str = get_ptr( &args );
+    ULONG len = get_ulong( &args );
+
+    return __wine_dbg_mark( str, len );
+}
+
 
 /**********************************************************************
  *           wow64___wine_unix_call

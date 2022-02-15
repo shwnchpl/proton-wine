@@ -65,6 +65,7 @@ WINE_1.0
     wine_cpsymbol_mbstowcs;
     wine_cpsymbol_wcstombs;
     wine_dbg_log;
+    wine_dbg_mark;
     wine_dbg_printf;
     wine_dbg_sprintf;
     wine_dbgstr_an;
