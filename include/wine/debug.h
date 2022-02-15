@@ -97,13 +97,20 @@ enum  __wine_debug_target
 #if defined(__GNUC__) || defined(__clang__)
 
 #define __WINE_DPRINTF(dbcl,dbch) \
-  do { if(__WINE_GET_DEBUGGING(dbcl,(dbch))) { \
+  do { unsigned __dbtrg;\
+       if ((__dbtrg = ((__WINE_IS_DEBUG_ON(dbcl,(dbch)) << __WINE_DBTRG_LOG) | \
+                (__WINE_IS_MARK_ON(dbcl,(dbch)) << __WINE_DBTRG_MARK)))) { \
        struct __wine_debug_channel * const __dbch = (dbch); \
        const enum __wine_debug_class __dbcl = __WINE_DBCL##dbcl; \
-       __WINE_DBG_LOG
+       __WINE_DBG_PRINTF_SUFFIX
 
-#define __WINE_DBG_LOG(args...) \
-    wine_dbg_log( __dbcl, __dbch, __FUNCTION__, args); } } while(0)
+#define __WINE_DBG_PRINTF_SUFFIX(args...) \
+    if (__dbtrg & (1 << __WINE_DBTRG_LOG)) { \
+        wine_dbg_log( __dbcl, __dbch, __FUNCTION__, args); }   \
+    if (__dbtrg & (1 << __WINE_DBTRG_MARK)) { \
+        wine_dbg_mark( __dbcl, __dbch, __FUNCTION__, args); }  \
+    } } while(0)
+
 
 #if !defined(__WINE_USE_MSVCRT) || defined(__MINGW32__)
 #define __WINE_PRINTF_ATTR(fmt,args) __attribute__((format (printf,fmt,args)))
@@ -126,14 +133,21 @@ enum  __wine_debug_target
 
 #elif defined(__SUNPRO_C)
 
+/* FIXME: Writing to trace marker via debug macros not supported on
+   this platform. */
+
 #define __WINE_DPRINTF(dbcl,dbch) \
-  do { if(__WINE_GET_DEBUGGING(dbcl,(dbch))) { \
+  do { unsigned __dbtrg;\
+       if ((__dbtrg = (__WINE_IS_DEBUG_ON(dbcl,(dbch)) << __WINE_DBTRG_LOG) | \
+                (__WINE_IS_MARK_ON(dbcl,(dbch)) << __WINE_DBTRG_MARK))) { \
        struct __wine_debug_channel * const __dbch = (dbch); \
        const enum __WINE_DEBUG_CLASS __dbcl = __WINE_DBCL##dbcl; \
-       __WINE_DBG_LOG
+       __WINE_DBG_PRINTF_SUFFIX
 
-#define __WINE_DBG_LOG(...) \
-   wine_dbg_log( __dbcl, __dbch, __func__, __VA_ARGS__); } } while(0)
+#define __WINE_DBG_PRINTF_SUFFIX(...) \
+    if (__dbtrg & (1 << __WINE_DBTRG_LOG)) { \
+        wine_dbg_log( __dbcl, __dbch, __func__, __VA_ARGS__); } \
+    } } while(0)
 
 #define __WINE_PRINTF_ATTR(fmt,args)
 
@@ -151,8 +165,11 @@ enum  __wine_debug_target
 
 #else  /* !__GNUC__ && !__SUNPRO_C */
 
+/* FIXME: Writing to trace marker via debug macros not supported on
+   this platform. */
+
 #define __WINE_DPRINTF(dbcl,dbch) \
-    (!__WINE_GET_DEBUGGING(dbcl,(dbch)) || \
+    (!__WINE_IS_DEBUG_ON(dbcl,(dbch)) || \
      (wine_dbg_log(__WINE_DBCL##dbcl,(dbch),__FILE__,"%d: ",__LINE__) == -1)) ? \
      (void)0 : (void)wine_dbg_printf
 
@@ -239,6 +256,35 @@ static inline int __wine_dbg_cdecl wine_dbg_log( enum __wine_debug_class cls,
     vsnprintf( buffer, sizeof(buffer), format, args );
     __wine_dbg_va_end( args );
     ret += __wine_dbg_log_output( buffer );
+    return ret;
+}
+
+static int __wine_dbg_cdecl wine_dbg_mark( enum __wine_debug_class cls,
+                                           struct __wine_debug_channel *channel, const char *func,
+                                           const char *format, ... ) __WINE_PRINTF_ATTR(4,5);
+static inline int __wine_dbg_cdecl wine_dbg_mark( enum __wine_debug_class cls,
+                                                  struct __wine_debug_channel *channel,
+                                                  const char *function, const char *format, ... )
+{
+    char buffer[1024];
+    __wine_dbg_va_list args;
+    int ret = 0;
+
+    if (*format == '\1')  /* special magic to avoid standard prefix */
+    {
+        format++;
+        function = NULL;
+    }
+
+    if ((ret = __wine_dbg_header( cls, channel, function, __WINE_DBTRG_MARK )) == -1)
+        return ret;
+
+    __wine_dbg_va_start( args, format );
+    vsnprintf( buffer, sizeof(buffer), format, args );
+    __wine_dbg_va_end( args );
+
+    ret += __wine_dbg_mark_output( buffer );
+
     return ret;
 }
 
