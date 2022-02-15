@@ -190,7 +190,7 @@ static int __cdecl fallback__wine_dbg_header( enum __wine_debug_class cls,
     /* skip header if partial line and no other thread came in between */
     if (partial_line_tid == GetCurrentThreadId()) return 0;
 
-    if (TRACE_ON(microsecs))
+    if (TRACE_LOG_ON(microsecs))
     {
         static LARGE_INTEGER frequency;
         LARGE_INTEGER counter, microsecs;
@@ -199,12 +199,12 @@ static int __cdecl fallback__wine_dbg_header( enum __wine_debug_class cls,
         microsecs.QuadPart = counter.QuadPart * 1000000 / frequency.QuadPart;
         pos += sprintf( pos, "%3u.%06u:", (unsigned int)(microsecs.QuadPart / 1000000), (unsigned int)(microsecs.QuadPart % 1000000) );
     }
-    else if (TRACE_ON(timestamp))
+    else if (TRACE_LOG_ON(timestamp))
     {
         ULONG ticks = GetTickCount();
         pos += sprintf( pos, "%3u.%03u:", ticks / 1000, ticks % 1000 );
     }
-    if (TRACE_ON(pid)) pos += sprintf( pos, "%04x:", GetCurrentProcessId() );
+    if (TRACE_LOG_ON(pid)) pos += sprintf( pos, "%04x:", GetCurrentProcessId() );
     pos += sprintf( pos, "%04x:", GetCurrentThreadId() );
     if (function && cls < ARRAY_SIZE( debug_classes ))
         snprintf( pos, sizeof(buffer) - (pos - buffer), "%s:%s:%s ",
