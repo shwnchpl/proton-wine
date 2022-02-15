@@ -1054,7 +1054,7 @@ NTSTATUS sdl_bus_init(void *args)
         goto failed;
     }
 
-    if (TRACE_ON(hid))
+    if (TRACE_LOG_ON(hid))
     {
         pSDL_LogSetPriority(SDL_LOG_CATEGORY_INPUT, SDL_LOG_PRIORITY_VERBOSE);
     }
