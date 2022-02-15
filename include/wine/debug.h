@@ -502,7 +502,7 @@ static inline const char *wine_dbgstr_variant( const VARIANT *v )
 #endif
 #define WINE_TRACE_LOG_ON(ch)      __WINE_IS_DEBUG_ON(_TRACE,&__wine_dbch_##ch)
 #define WINE_TRACE_MARK_ON(ch)     __WINE_IS_MARK_ON(_TRACE,&__wine_dbch_##ch)
-#define WINE_TRACE_ON(ch)          (WINE_TRACE_LOG_ON(ch))
+#define WINE_TRACE_ON(ch)          (WINE_TRACE_LOG_ON(ch) || WINE_TRACE_MARK_ON(ch))
 
 #ifndef WINE_WARN
 #define WINE_WARN                  __WINE_DPRINTF(_WARN,__wine_dbch___default)
@@ -510,7 +510,7 @@ static inline const char *wine_dbgstr_variant( const VARIANT *v )
 #endif
 #define WINE_WARN_LOG_ON(ch)       __WINE_IS_DEBUG_ON(_WARN,&__wine_dbch_##ch)
 #define WINE_WARN_MARK_ON(ch)      __WINE_IS_MARK_ON(_WARN,&__wine_dbch_##ch)
-#define WINE_WARN_ON(ch)           (WINE_WARN_LOG_ON(ch))
+#define WINE_WARN_ON(ch)           (WINE_WARN_LOG_ON(ch) || WINE_WARN_MARK_ON(ch))
 
 #ifndef WINE_FIXME
 #define WINE_FIXME                 __WINE_DPRINTF(_FIXME,__wine_dbch___default)
@@ -518,13 +518,13 @@ static inline const char *wine_dbgstr_variant( const VARIANT *v )
 #endif
 #define WINE_FIXME_LOG_ON(ch)      __WINE_IS_DEBUG_ON(_FIXME,&__wine_dbch_##ch)
 #define WINE_FIXME_MARK_ON(ch)     __WINE_IS_MARK_ON(_FIXME,&__wine_dbch_##ch)
-#define WINE_FIXME_ON(ch)          (WINE_FIXME_LOG_ON(ch))
+#define WINE_FIXME_ON(ch)          (WINE_FIXME_LOG_ON(ch) || WINE_FIXME_MARK_ON(ch))
 
 #define WINE_ERR                   __WINE_DPRINTF(_ERR,__wine_dbch___default)
 #define WINE_ERR_(ch)              __WINE_DPRINTF(_ERR,&__wine_dbch_##ch)
 #define WINE_ERR_LOG_ON(ch)        __WINE_IS_DEBUG_ON(_ERR,&__wine_dbch_##ch)
 #define WINE_ERR_MARK_ON(ch)       __WINE_IS_MARK_ON(_ERR,&__wine_dbch_##ch)
-#define WINE_ERR_ON(ch)            (WINE_ERR_LOG_ON(ch))
+#define WINE_ERR_ON(ch)            (WINE_ERR_LOG_ON(ch) || WINE_ERR_MARK_ON(ch))
 
 #define WINE_DECLARE_DEBUG_CHANNEL(ch) \
     static struct __wine_debug_channel __wine_dbch_##ch = { 0xff, 0xff, #ch }
