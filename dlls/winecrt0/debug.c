@@ -34,6 +34,7 @@ WINE_DECLARE_DEBUG_CHANNEL(microsecs);
 
 static const char * (__cdecl *p__wine_dbg_strdup)( const char *str );
 static int (__cdecl *p__wine_dbg_log_output)( const char *str );
+static int (__cdecl *p__wine_dbg_mark_output)( const char *str );
 static unsigned char (__cdecl *p__wine_dbg_get_channel_flags)( struct __wine_debug_channel *channel,
                                                                enum __wine_debug_target target );
 static int (__cdecl *p__wine_dbg_header)( enum __wine_debug_class cls,
@@ -181,6 +182,11 @@ static int __cdecl fallback__wine_dbg_log_output( const char *str )
     return fwrite( str, 1, len, stderr );
 }
 
+static int __cdecl fallback__wine_dbg_mark_output( const char *str )
+{
+    return STATUS_DLL_NOT_FOUND;
+}
+
 static int __cdecl fallback__wine_dbg_header( enum __wine_debug_class cls,
                                               struct __wine_debug_channel *channel,
                                               const char *function,
@@ -257,6 +263,12 @@ int __cdecl __wine_dbg_log_output( const char *str )
 {
     LOAD_FUNC( __wine_dbg_log_output );
     return p__wine_dbg_log_output( str );
+}
+
+int __cdecl __wine_dbg_mark_output( const char *str )
+{
+    LOAD_FUNC( __wine_dbg_mark_output );
+    return p__wine_dbg_mark_output( str );
 }
 
 unsigned char __cdecl __wine_dbg_get_channel_flags( struct __wine_debug_channel *channel,

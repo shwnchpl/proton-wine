@@ -44,11 +44,13 @@ struct debug_info
 {
     unsigned int str_pos;       /* current position in strings buffer */
     unsigned int out_pos;       /* current position in output buffer */
+    unsigned int mark_pos;      /* current position in the mark buffer */
     char         strings[1020]; /* buffer for temporary strings */
     char         output[1020];  /* current output line */
+    char         mark[1020];    /* current mark line */
 };
 
-C_ASSERT( sizeof(struct debug_info) == 0x800 );
+C_ASSERT( sizeof(struct debug_info) == 0xc00 );
 
 struct dbg_config
 {
@@ -106,6 +108,22 @@ static int append_output( struct debug_info *info, const char *str, size_t len )
     }
     memcpy( info->output + info->out_pos, str, len );
     info->out_pos += len;
+    return len;
+}
+
+/* add a string to the output buffer */
+static int append_mark( struct debug_info *info, const char *str, size_t len )
+{
+    if (len >= sizeof(info->mark) - info->mark_pos)
+    {
+        __wine_dbg_mark( info->mark, info->mark_pos );
+        info->mark_pos = 0;
+        ERR_(thread)( "debug buffer overflow:\n" );
+        __wine_dbg_mark( str, len );
+        RtlRaiseStatus( STATUS_BUFFER_OVERFLOW );
+    }
+    memcpy( info->mark + info->mark_pos, str, len );
+    info->mark_pos += len;
     return len;
 }
 
@@ -221,6 +239,30 @@ int __cdecl __wine_dbg_log_output( const char *str )
         str = end + 1;
     }
     if (*str) ret += append_output( info, str, strlen( str ));
+    return ret;
+}
+
+
+/***********************************************************************
+ *		__wine_dbg_mark_output  (NTDLL.@)
+ */
+int __cdecl __wine_dbg_mark_output( const char *str )
+{
+    struct debug_info *info;
+    const char *end;
+    int ret = 0;
+
+    info = get_info();
+    end = strrchr( str, '\n' );
+
+    if (end)
+    {
+        ret += append_mark( info, str, end + 1 - str );
+        __wine_dbg_mark( info->mark, info->mark_pos );
+        info->mark_pos = 0;
+        str = end + 1;
+    }
+    if (*str) ret += append_mark( info, str, strlen( str ));
     return ret;
 }
 

@@ -162,6 +162,7 @@ extern unsigned char __cdecl __wine_dbg_get_channel_flags( struct __wine_debug_c
                                                            enum __wine_debug_target target );
 extern const char * __cdecl __wine_dbg_strdup( const char *str );
 extern int __cdecl __wine_dbg_log_output( const char *str );
+extern int __cdecl __wine_dbg_mark_output( const char *str );
 extern int __cdecl __wine_dbg_header( enum __wine_debug_class cls, struct __wine_debug_channel *channel,
                                       const char *function, enum __wine_debug_target target );
 extern void __cdecl __wine_set_unix_env( const char *var, const char *val );
