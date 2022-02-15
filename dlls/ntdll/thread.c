@@ -117,6 +117,9 @@ unsigned char __cdecl __wine_dbg_get_channel_flags( struct __wine_debug_channel 
     conf = &log_config;
     flags = &channel->log_flags;
 
+    if (!(*flags & (1 << __WINE_DBCL_INIT)))
+        return *flags;
+
     min = 0;
     max = conf->opts_cnt - 1;
     while (min <= max)
@@ -124,7 +127,10 @@ unsigned char __cdecl __wine_dbg_get_channel_flags( struct __wine_debug_channel 
         pos = (min + max) / 2;
         res = strcmp( channel->name, conf->opts[pos].name );
         if (!res)
+        {
+            *flags = conf->opts[pos].flags;
             return conf->opts[pos].flags;
+        }
         if (res < 0) max = pos - 1;
         else min = pos + 1;
     }
