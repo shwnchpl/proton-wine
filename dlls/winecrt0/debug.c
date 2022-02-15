@@ -225,7 +225,11 @@ static unsigned char __cdecl fallback__wine_dbg_get_channel_flags( struct __wine
     {
         pos = (min + max) / 2;
         res = strcmp( channel->name, debug_options[pos].name );
-        if (!res) return debug_options[pos].flags;
+        if (!res)
+        {
+            channel->log_flags = debug_options[pos].flags;
+            return debug_options[pos].flags;
+        }
         if (res < 0) max = pos - 1;
         else min = pos + 1;
     }
