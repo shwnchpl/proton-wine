@@ -1502,6 +1502,7 @@ static void dump_init_first_thread_request( const struct init_first_thread_reque
     SERVER_LOG( LOG_ALWAYS, " unix_pid=%d", req->unix_pid );
     SERVER_LOG( LOG_ALWAYS, ", unix_tid=%d", req->unix_tid );
     SERVER_LOG( LOG_ALWAYS, ", debug_log_level=%d", req->debug_log_level );
+    SERVER_LOG( LOG_ALWAYS, ", debug_mark_level=%d", req->debug_mark_level );
     SERVER_LOG( LOG_ALWAYS, ", reply_fd=%d", req->reply_fd );
     SERVER_LOG( LOG_ALWAYS, ", wait_fd=%d", req->wait_fd );
 }

@@ -923,7 +923,8 @@ struct init_first_thread_request
     struct request_header __header;
     int          unix_pid;
     int          unix_tid;
-    int          debug_log_level;
+    unsigned char   debug_log_level;
+    unsigned char   debug_mark_level;
     int          reply_fd;
     int          wait_fd;
 };

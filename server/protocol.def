@@ -960,7 +960,8 @@ struct input_shared_memory
 @REQ(init_first_thread)
     int          unix_pid;     /* Unix pid of new process */
     int          unix_tid;     /* Unix tid of new thread */
-    int          debug_log_level;  /* new debug log level */
+    unsigned char   debug_log_level;    /* new debug log level */
+    unsigned char   debug_mark_level;   /* new debug log level */
     int          reply_fd;     /* fd for reply pipe */
     int          wait_fd;      /* fd for blocking calls pipe */
     char         nice_limit;   /* RLIMIT_NICE of new thread */

@@ -1676,6 +1676,7 @@ DECL_HANDLER(init_first_thread)
     }
 
     debug_log_level = max( debug_log_level, req->debug_log_level );
+    debug_mark_level = max( debug_mark_level, req->debug_mark_level );
 
     reply->pid          = get_process_id( process );
     reply->tid          = get_thread_id( current );
