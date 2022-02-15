@@ -875,11 +875,13 @@ static void exec_wineserver( char **argv )
  *
  * Start a new wine server.
  */
-void start_server( BOOL debug )
+void start_server( BOOL log, BOOL mark )
 {
     static BOOL started;  /* we only try once */
     char *argv[3];
-    static char debug_flag[] = "-d";
+    static char log_flag[] = "-d";
+    static char mark_flag[] = "-m";
+    int argc = 1;
 
     if (!started)
     {
@@ -888,8 +890,9 @@ void start_server( BOOL debug )
         if (pid == -1) fatal_error( "fork: %s", strerror(errno) );
         if (!pid)
         {
-            argv[1] = debug ? debug_flag : NULL;
-            argv[2] = NULL;
+            if (log) argv[argc++] = log_flag;
+            if (mark) argv[argc++] = mark_flag;
+            argv[argc] = NULL;
             exec_wineserver( argv );
             fatal_error( "could not exec wineserver\n" );
         }

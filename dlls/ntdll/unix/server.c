@@ -1239,7 +1239,7 @@ static int server_connect(void)
     if (chdir( server_dir ) == -1)
     {
         if (errno != ENOENT) fatal_perror( "chdir to %s", server_dir );
-        start_server( TRACE_ON(server) );
+        start_server( TRACE_LOG_ON(server), TRACE_MARK_ON(server) );
         if (chdir( server_dir ) == -1) fatal_perror( "chdir to %s", server_dir );
     }
 
@@ -1254,13 +1254,13 @@ static int server_connect(void)
         if (retry)
         {
             usleep( 100000 * retry * retry );
-            start_server( TRACE_ON(server) );
+            start_server( TRACE_LOG_ON(server), TRACE_MARK_ON(server) );
             if (lstat( SOCKETNAME, &st ) == -1) continue;  /* still no socket, wait a bit more */
         }
         else if (lstat( SOCKETNAME, &st ) == -1) /* check for an already existing socket */
         {
             if (errno != ENOENT) fatal_perror( "lstat %s/%s", server_dir, SOCKETNAME );
-            start_server( TRACE_ON(server) );
+            start_server( TRACE_LOG_ON(server), TRACE_MARK_ON(server) );
             if (lstat( SOCKETNAME, &st ) == -1) continue;  /* still no socket, wait a bit more */
         }
 
