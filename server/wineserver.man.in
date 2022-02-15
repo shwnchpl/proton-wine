@@ -17,15 +17,29 @@ explained below.
 .SH OPTIONS
 .TP
 \fB\-d\fR[\fIn\fR], \fB--debug\fR[\fB=\fIn\fR]
-Set the debug level to
+Set the debug logging level to
 .IR n .
 0 means no debugging information, 1 is the normal level, and 2 is for
-extra verbose debugging. If
+extra verbose debug logging. If
 .I n
 is not specified, the default is 1. The debug output will be sent to
 stderr. \fBwine\fR(1) will automatically enable normal level debugging
 when starting \fBwineserver\fR if the +server option is set in the
 \fBWINEDEBUG\fR variable.
+.TP
+\fB\-m\fR[\fIn\fR], \fB--mark\fR[\fB=\fIn\fR]
+Set the mark level to
+.IR n .
+0 means no trace information, 1 is the normal level, and 2 is for
+extra verbose tracing. If
+.I n
+is not specified, the default is 0. The trace output will be sent to
+the path specified by the WINE_TRACE_MARKER environment variable
+or /sys/kernel/tracing/trace_marker by default. This functionality
+is only designed to work on Linux, and only then when kernel tracing
+is enabled. \fBwine\fR(1) will automatically enable normal level tracing
+when starting \fBwineserver\fR if the +server option is set in the
+\fBDEBUGMARK\fR variable.
 .TP
 .BR \-f ", " --foreground
 Make the server remain in the foreground for easier debugging, for
