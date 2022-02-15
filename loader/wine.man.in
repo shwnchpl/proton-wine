@@ -150,6 +150,19 @@ For more information on debugging messages, see the
 chapter of the Wine User Guide.
 .RE
 .TP
+.B WINEMARK
+Functions exactly like WINEDEBUG, except instead of writing debug messages
+to standard error, they are written to the some other file (
+.B /sys/kernel/tracing/trace_marker
+by default). This is intended to allow debug output to be written to a kernel
+trace buffer on systems where this is supported. If there are no debug channels
+defined by WINEMARK, nothing will be written.
+.TP
+.B WINE_TRACE_MARKER
+Specifies the path to which WINEMARK debug messages should be written. If
+WINE_TRACE_MARKER is not set, the default path ftrace trace_marker file on most
+modern Linux distributions will be used.
+.TP
 .B WINEDLLPATH
 Specifies the path(s) in which to search for builtin dlls and Winelib
 applications. This is a list of directories separated by ":". In
