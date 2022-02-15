@@ -767,7 +767,7 @@ HRESULT WINAPI RegisterTypeLib(ITypeLib *ptlib, const WCHAR *szFullPath, const W
 				    debugstr_guid(&tattr->guid),
 				    tattr->wTypeFlags);
 
-		    if (TRACE_ON(typelib)) {
+		    if (TRACE_LOG_ON(typelib)) {
 #define XX(x) if (TYPEFLAG_##x & tattr->wTypeFlags) MESSAGE(#x"|");
 			XX(FAPPOBJECT);
 			XX(FCANCREATE);
@@ -1549,7 +1549,7 @@ static void dump_TypeInfo(const ITypeInfoImpl * pty)
     TRACE("wTypeFlags: 0x%04x\n", pty->typeattr.wTypeFlags);
     TRACE("parent tlb:%p index in TLB:%u\n",pty->pTypeLib, pty->index);
     if (pty->typeattr.typekind == TKIND_MODULE) TRACE("dllname:%s\n", debugstr_w(TLB_get_bstr(pty->DllName)));
-    if (TRACE_ON(ole))
+    if (TRACE_LOG_ON(ole))
         dump_TLBFuncDesc(pty->funcdescs, pty->typeattr.cFuncs);
     dump_TLBVarDesc(pty->vardescs, pty->typeattr.cVars);
     dump_TLBImplType(pty->impltypes, pty->typeattr.cImplTypes);
@@ -2757,7 +2757,7 @@ static ITypeInfoImpl * MSFT_DoTypeInfo(
        debugstr_w(TLB_get_bstr(ptiRet->Name)),
        debugstr_guid(TLB_get_guidref(ptiRet->guid)),
        typekind_desc[ptiRet->typeattr.typekind]);
-    if (TRACE_ON(typelib))
+    if (TRACE_LOG_ON(typelib))
       dump_TypeInfo(ptiRet);
 
     return ptiRet;
@@ -4048,7 +4048,7 @@ static void SLTG_DoVars(char *pBlk, char *pFirstItem, ITypeInfoImpl *pTI, unsign
       SLTG_DoElem(pType, pBlk,
 		  &pVarDesc->vardesc.elemdescVar, ref_lookup);
 
-      if (TRACE_ON(typelib)) {
+      if (TRACE_LOG_ON(typelib)) {
           char buf[300];
           dump_TypeDesc(&pVarDesc->vardesc.elemdescVar.tdesc, buf);
           TRACE_(typelib)("elemdescVar: %s\n", buf);
@@ -4271,7 +4271,7 @@ static void SLTG_ProcessInterface(char *pBlk, ITypeInfoImpl *pTI,
 
     heap_free(ref_lookup);
 
-    if (TRACE_ON(typelib))
+    if (TRACE_LOG_ON(typelib))
         dump_TLBFuncDesc(pTI->funcdescs, pTI->typeattr.cFuncs);
 }
 
@@ -4334,7 +4334,7 @@ static void SLTG_ProcessDispatch(char *pBlk, ITypeInfoImpl *pTI,
   pTI->typeattr.cbSizeVft = pTI->typeattr.cFuncs * pTI->pTypeLib->ptr_size;
 
   heap_free(ref_lookup);
-  if (TRACE_ON(typelib))
+  if (TRACE_LOG_ON(typelib))
       dump_TLBFuncDesc(pTI->funcdescs, pTI->typeattr.cFuncs);
 }
 
@@ -4360,7 +4360,7 @@ static void SLTG_ProcessModule(char *pBlk, ITypeInfoImpl *pTI,
   if (pTITail->funcs_off != 0xffff)
     SLTG_DoFuncs(pBlk, pBlk + pTITail->funcs_off, pTI, pTITail->cFuncs, pNameTable, ref_lookup);
   heap_free(ref_lookup);
-  if (TRACE_ON(typelib))
+  if (TRACE_LOG_ON(typelib))
     dump_TypeInfo(pTI);
 }
 
@@ -5849,7 +5849,7 @@ static HRESULT TLB_AllocAndInitFuncDesc( const FUNCDESC *src, FUNCDESC **dest_pt
             if (elemdesc->tdesc.vt != VT_PTR)
             {
                 ERR("elemdesc should have started with VT_PTR instead of:\n");
-                if (ERR_ON(ole))
+                if (ERR_LOG_ON(ole))
                     dump_ELEMDESC(elemdesc);
                 return E_UNEXPECTED;
             }
@@ -6207,7 +6207,7 @@ static HRESULT WINAPI ITypeInfo_fnGetRefTypeOfImplType(
     HRESULT hr = S_OK;
 
     TRACE("(%p) index %d\n", This, index);
-    if (TRACE_ON(ole)) dump_TypeInfo(This);
+    if (TRACE_LOG_ON(ole)) dump_TypeInfo(This);
 
     if(index==(UINT)-1)
     {
@@ -6240,7 +6240,7 @@ static HRESULT WINAPI ITypeInfo_fnGetRefTypeOfImplType(
         }
     }
 
-    if(TRACE_ON(ole))
+    if(TRACE_LOG_ON(ole))
     {
         if(SUCCEEDED(hr))
             TRACE("SUCCESS -- hRef = 0x%08x\n", *pRefType );
@@ -7259,7 +7259,7 @@ static HRESULT WINAPI ITypeInfo_fnInvoke(
     if (fdc < This->typeattr.cFuncs) {
         const FUNCDESC *func_desc = &pFuncInfo->funcdesc;
 
-        if (TRACE_ON(ole))
+        if (TRACE_LOG_ON(ole))
         {
             TRACE("invoking:\n");
             dump_TLBFuncDescOne(pFuncInfo);
@@ -7829,7 +7829,7 @@ static HRESULT WINAPI ITypeInfo_fnGetDllEntry( ITypeInfo2 *iface, MEMBERID memid
     if (!pFDesc) return TYPE_E_ELEMENTNOTFOUND;
 
     dump_TypeInfo(This);
-    if (TRACE_ON(ole)) dump_TLBFuncDescOne(pFDesc);
+    if (TRACE_LOG_ON(ole)) dump_TLBFuncDescOne(pFDesc);
 
     if (pBstrDllName) *pBstrDllName = SysAllocString(TLB_get_bstr(This->DllName));
 
