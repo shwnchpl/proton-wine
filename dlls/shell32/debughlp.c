@@ -261,7 +261,7 @@ void pdump (LPCITEMIDLIST pidl)
 {
     LPCITEMIDLIST pidltemp = pidl;
 
-    if (!TRACE_ON(pidl)) return;
+    if (!TRACE_LOG_ON(pidl)) return;
 
     if (! pidltemp)
     {

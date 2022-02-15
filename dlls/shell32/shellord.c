@@ -1856,7 +1856,7 @@ HRESULT WINAPI CIDLData_CreateFromIDArray(
     HWND hwnd = 0;   /*FIXME: who should be hwnd of owner? set to desktop */
 
     TRACE("(%p, %d, %p, %p)\n", pidlFolder, cpidlFiles, lppidlFiles, ppdataObject);
-    if (TRACE_ON(pidl))
+    if (TRACE_LOG_ON(pidl))
     {
 	pdump (pidlFolder);
 	for (i=0; i<cpidlFiles; i++) pdump (lppidlFiles[i]);
