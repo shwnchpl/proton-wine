@@ -57,12 +57,24 @@ struct debug_info
 
 C_ASSERT( sizeof(struct debug_info) == 0x800 );
 
+struct dbg_config
+{
+    unsigned char default_flags;
+    int opts_sz;
+    int opts_cnt;
+    struct __wine_debug_option *opts;
+};
+
+static struct dbg_config log_config = {
+    /* default_flags = */   (1 << __WINE_DBCL_ERR) | (1 << __WINE_DBCL_FIXME),
+    /* opts_sz = */         0,
+    /* opts_cnt = */        0,
+    /* opts = */            NULL
+};
+
 static BOOL init_done;
+static BOOL option_init_done = FALSE;
 static struct debug_info initial_info;  /* debug info for initial thread */
-static unsigned char default_flags = (1 << __WINE_DBCL_ERR) | (1 << __WINE_DBCL_FIXME);
-static int nb_debug_options = -1;
-static int options_size;
-static struct __wine_debug_option *debug_options;
 
 static const char * const debug_classes[] = { "fixme", "err", "warn", "trace" };
 
@@ -92,45 +104,47 @@ static int append_output( struct debug_info *info, const char *str, size_t len )
 }
 
 /* add a new debug option at the end of the option list */
-static void add_option( const char *name, unsigned char set, unsigned char clear )
+static void add_option( struct dbg_config *conf, const char *name, unsigned char set,
+                        unsigned char clear )
 {
-    int min = 0, max = nb_debug_options - 1, pos, res;
+    int min = 0, max = conf->opts_cnt - 1, pos, res;
 
     if (!name[0])  /* "all" option */
     {
-        default_flags = (default_flags & ~clear) | set;
+        conf->default_flags = (conf->default_flags & ~clear) | set;
         return;
     }
-    if (strlen(name) >= sizeof(debug_options[0].name)) return;
+    if (strlen(name) >= sizeof(conf->opts[0].name)) return;
 
     while (min <= max)
     {
         pos = (min + max) / 2;
-        res = strcmp( name, debug_options[pos].name );
+        res = strcmp( name, conf->opts[pos].name );
         if (!res)
         {
-            debug_options[pos].flags = (debug_options[pos].flags & ~clear) | set;
+            conf->opts[pos].flags = (conf->opts[pos].flags & ~clear) | set;
             return;
         }
         if (res < 0) max = pos - 1;
         else min = pos + 1;
     }
-    if (nb_debug_options >= options_size)
+    if (conf->opts_cnt >= conf->opts_sz)
     {
-        options_size = max( options_size * 2, 16 );
-        debug_options = realloc( debug_options, options_size * sizeof(debug_options[0]) );
+        conf->opts_sz = max( conf->opts_sz * 2, 16 );
+        conf->opts = realloc( conf->opts, conf->opts_sz * sizeof(conf->opts[0]) );
     }
 
     pos = min;
-    if (pos < nb_debug_options) memmove( &debug_options[pos + 1], &debug_options[pos],
-                                         (nb_debug_options - pos) * sizeof(debug_options[0]) );
-    strcpy( debug_options[pos].name, name );
-    debug_options[pos].flags = (default_flags & ~clear) | set;
-    nb_debug_options++;
+    if (pos < conf->opts_cnt)
+        memmove( &conf->opts[pos + 1], &conf->opts[pos],
+                (conf->opts_cnt - pos) * sizeof(conf->opts[0]) );
+    strcpy( conf->opts[pos].name, name );
+    conf->opts[pos].flags = (conf->default_flags & ~clear) | set;
+    conf->opts_cnt++;
 }
 
 /* parse a set of debugging option specifications and add them to the option list */
-static void parse_options( const char *str )
+static void parse_options( struct dbg_config *conf, const char *str )
 {
     char *opt, *next, *options;
     unsigned int i;
@@ -171,9 +185,9 @@ static void parse_options( const char *str )
         if (!p[0]) continue;
 
         if (!strcmp( p, "all" ))
-            default_flags = (default_flags & ~clear) | set;
+            conf->default_flags = (conf->default_flags & ~clear) | set;
         else
-            add_option( p, set, clear );
+            add_option( conf, p, set, clear );
     }
     free( options );
 }
@@ -197,19 +211,19 @@ static void init_options(void)
     char *wine_debug = getenv("WINEDEBUG");
     struct stat st1, st2;
 
-    nb_debug_options = 0;
+    option_init_done = TRUE;
 
     /* check for stderr pointing to /dev/null */
     if (!fstat( 2, &st1 ) && S_ISCHR(st1.st_mode) &&
         !stat( "/dev/null", &st2 ) && S_ISCHR(st2.st_mode) &&
         st1.st_rdev == st2.st_rdev)
     {
-        default_flags = 0;
+        log_config.default_flags = 0;
         return;
     }
     if (!wine_debug) return;
     if (!strcmp( wine_debug, "help" )) debug_usage();
-    parse_options( wine_debug );
+    parse_options( &log_config, wine_debug );
 }
 
 /***********************************************************************
@@ -220,23 +234,29 @@ static void init_options(void)
 unsigned char __cdecl __wine_dbg_get_channel_flags( struct __wine_debug_channel *channel )
 {
     int min, max, pos, res;
+    struct dbg_config *conf;
+    unsigned char *flags;
 
-    if (nb_debug_options == -1) init_options();
+    if (!option_init_done) init_options();
+
+    conf = &log_config;
+    flags = &channel->log_flags;
 
     min = 0;
-    max = nb_debug_options - 1;
+    max = conf->opts_cnt - 1;
     while (min <= max)
     {
         pos = (min + max) / 2;
-        res = strcmp( channel->name, debug_options[pos].name );
-        if (!res) return debug_options[pos].flags;
+        res = strcmp( channel->name, conf->opts[pos].name );
+        if (!res)
+            return conf->opts[pos].flags;
         if (res < 0) max = pos - 1;
         else min = pos + 1;
     }
     /* no option for this channel */
-    if (channel->log_flags & (1 << __WINE_DBCL_INIT))
-        channel->log_flags = default_flags;
-    return default_flags;
+    if (*flags & (1 << __WINE_DBCL_INIT))
+        *flags = conf->default_flags;
+    return conf->default_flags;
 }
 
 /***********************************************************************
@@ -326,18 +346,20 @@ int __cdecl __wine_dbg_header( enum __wine_debug_class cls, struct __wine_debug_
  */
 void dbg_init(void)
 {
-    struct __wine_debug_option *options, default_option = { default_flags };
+    struct __wine_debug_option *options, default_option = { 0 };
 
     setbuf( stdout, NULL );
     setbuf( stderr, NULL );
 
-    if (nb_debug_options == -1) init_options();
+    if (!option_init_done) init_options();
 
-    options = (struct __wine_debug_channel *)((char *)peb + (is_win64 ? 2 : 1) * page_size);
-    memcpy( options, debug_options, nb_debug_options * sizeof(*options) );
-    free( debug_options );
-    debug_options = options;
-    options[nb_debug_options] = default_option;
+    options = (struct __wine_debug_option *)((char *)peb + (is_win64 ? 2 : 1) * page_size);
+
+    memcpy( options, log_config.opts, log_config.opts_cnt * sizeof(*options) );
+    free( log_config.opts );
+    log_config.opts = options;
+    log_config.opts[log_config.opts_cnt] = default_option;
+
     init_done = TRUE;
 }
 
