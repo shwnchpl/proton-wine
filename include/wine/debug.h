@@ -51,26 +51,32 @@ enum __wine_debug_class
 
 struct __wine_debug_channel
 {
+    unsigned char log_flags;
+    char name[15];
+};
+
+struct __wine_debug_option
+{
     unsigned char flags;
     char name[15];
 };
 
 #ifndef WINE_NO_TRACE_MSGS
-# define __WINE_GET_DEBUGGING_TRACE(dbch) ((dbch)->flags & (1 << __WINE_DBCL_TRACE))
+# define __WINE_GET_DEBUGGING_TRACE(dbch) ((dbch)->log_flags & (1 << __WINE_DBCL_TRACE))
 #else
 # define __WINE_GET_DEBUGGING_TRACE(dbch) 0
 #endif
 
 #ifndef WINE_NO_DEBUG_MSGS
-# define __WINE_GET_DEBUGGING_WARN(dbch)  ((dbch)->flags & (1 << __WINE_DBCL_WARN))
-# define __WINE_GET_DEBUGGING_FIXME(dbch) ((dbch)->flags & (1 << __WINE_DBCL_FIXME))
+# define __WINE_GET_DEBUGGING_WARN(dbch)  ((dbch)->log_flags & (1 << __WINE_DBCL_WARN))
+# define __WINE_GET_DEBUGGING_FIXME(dbch) ((dbch)->log_flags & (1 << __WINE_DBCL_FIXME))
 #else
 # define __WINE_GET_DEBUGGING_WARN(dbch)  0
 # define __WINE_GET_DEBUGGING_FIXME(dbch) 0
 #endif
 
 /* define error macro regardless of what is configured */
-#define __WINE_GET_DEBUGGING_ERR(dbch)  ((dbch)->flags & (1 << __WINE_DBCL_ERR))
+#define __WINE_GET_DEBUGGING_ERR(dbch)  ((dbch)->log_flags & (1 << __WINE_DBCL_ERR))
 
 #define __WINE_GET_DEBUGGING(dbcl,dbch)  __WINE_GET_DEBUGGING##dbcl(dbch)
 

@@ -51,7 +51,7 @@ static const char * const debug_classes[] = { "fixme", "err", "warn", "trace" };
 
 static unsigned char default_flags = (1 << __WINE_DBCL_ERR) | (1 << __WINE_DBCL_FIXME);
 static int nb_debug_options = -1;
-static struct __wine_debug_channel debug_options[MAX_DEBUG_OPTIONS];
+static struct __wine_debug_option debug_options[MAX_DEBUG_OPTIONS];
 
 static struct __wine_debug_functions funcs;
 
@@ -60,7 +60,7 @@ static void debug_init(void);
 static int cmp_name( const void *p1, const void *p2 )
 {
     const char *name = p1;
-    const struct __wine_debug_channel *chan = p2;
+    const struct __wine_debug_option *chan = p2;
     return strcmp( name, chan->name );
 }
 
@@ -73,10 +73,11 @@ unsigned char __wine_dbg_get_channel_flags_obsolete( struct __wine_debug_channel
     {
         struct __wine_debug_channel *opt = bsearch( channel->name, debug_options, nb_debug_options,
                                                     sizeof(debug_options[0]), cmp_name );
-        if (opt) return opt->flags;
+        if (opt) return opt->log_flags;
     }
     /* no option for this channel */
-    if (channel->flags & (1 << __WINE_DBCL_INIT)) channel->flags = default_flags;
+    if (channel->log_flags & (1 << __WINE_DBCL_INIT))
+        channel->log_flags = default_flags;
     return default_flags;
 }
 
@@ -92,7 +93,7 @@ int __wine_dbg_set_channel_flags_obsolete( struct __wine_debug_channel *channel,
                                                     sizeof(debug_options[0]), cmp_name );
         if (opt)
         {
-            opt->flags = (opt->flags & ~clear) | set;
+            opt->log_flags = (opt->log_flags & ~clear) | set;
             return 1;
         }
     }

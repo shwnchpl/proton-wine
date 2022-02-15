@@ -51,7 +51,7 @@ struct debug_info
 C_ASSERT( sizeof(struct debug_info) == 0x800 );
 
 static int nb_debug_options;
-static struct __wine_debug_channel *debug_options;
+static struct __wine_debug_option *debug_options;
 
 static inline struct debug_info *get_info(void)
 {
@@ -110,7 +110,8 @@ unsigned char __cdecl __wine_dbg_get_channel_flags( struct __wine_debug_channel 
     }
     /* no option for this channel */
     default_flags = debug_options[nb_debug_options].flags;
-    if (channel->flags & (1 << __WINE_DBCL_INIT)) channel->flags = default_flags;
+    if (channel->log_flags & (1 << __WINE_DBCL_INIT))
+        channel->log_flags = default_flags;
     return default_flags;
 }
 

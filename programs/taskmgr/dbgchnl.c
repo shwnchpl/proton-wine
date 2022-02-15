@@ -96,7 +96,7 @@ static int     list_channel_CB(HANDLE hProcess, void* addr, struct __wine_debug_
     val[1] = '\0';
     for (j = 0; j < 4; j++)
     {
-        val[0] = (channel->flags & (1 << j)) ? 'x' : ' ';
+        val[0] = (channel->log_flags & (1 << j)) ? 'x' : ' ';
         ListView_SetItemTextW(hChannelLV, index, j + 1, val);
     }
     return 1;
@@ -121,7 +121,7 @@ static int change_channel_CB(HANDLE hProcess, void* addr, struct __wine_debug_ch
 
     if (!user->name || !strcmp(channel->name, user->name))
     {
-        channel->flags = (channel->flags & ~user->mask) | (user->value & user->mask);
+        channel->log_flags = (channel->log_flags & ~user->mask) | (user->value & user->mask);
         if (WriteProcessMemory(hProcess, addr, channel, sizeof(*channel), NULL))
             user->done++;
         else

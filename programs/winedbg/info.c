@@ -838,8 +838,8 @@ void info_wine_dbg_channel(BOOL turn_on, const char* cls, const char* name)
         if (!channel.name[0]) break;
         if (bAll || !strcmp( channel.name, name ))
         {
-            if (turn_on) channel.flags |= mask;
-            else channel.flags &= ~mask;
+            if (turn_on) channel.log_flags |= mask;
+            else channel.log_flags &= ~mask;
             if (dbg_write_memory(addr, &channel, sizeof(channel))) done++;
         }
         addr = (struct __wine_debug_channel *)addr + 1;

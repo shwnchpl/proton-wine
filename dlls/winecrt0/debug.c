@@ -44,7 +44,7 @@ static const char * const debug_classes[] = { "fixme", "err", "warn", "trace" };
 static unsigned char default_flags = (1 << __WINE_DBCL_ERR) | (1 << __WINE_DBCL_FIXME);
 static int nb_debug_options = -1;
 static int options_size;
-static struct __wine_debug_channel *debug_options;
+static struct __wine_debug_option *debug_options;
 static DWORD partial_line_tid;  /* id of the last thread to output a partial line */
 
 static void load_func( void **func, const char *name, void *def )
@@ -230,7 +230,7 @@ static unsigned char __cdecl fallback__wine_dbg_get_channel_flags( struct __wine
         else min = pos + 1;
     }
     /* no option for this channel */
-    if (channel->flags & (1 << __WINE_DBCL_INIT)) channel->flags = default_flags;
+    if (channel->log_flags & (1 << __WINE_DBCL_INIT)) channel->log_flags = default_flags;
     return default_flags;
 }
 
