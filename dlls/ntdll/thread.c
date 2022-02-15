@@ -64,6 +64,11 @@ static struct dbg_config log_config = {
     /* opts_cnt = */        0,
     /* opts = */            NULL
 };
+static struct dbg_config mark_config = {
+    /* default_flags = */   0,
+    /* opts_cnt = */        0,
+    /* opts = */            NULL
+};
 
 static inline struct debug_info *get_info(void)
 {
@@ -81,6 +86,9 @@ static void init_options(void)
     log_config.opts = (struct __wine_debug_option *)((char *)NtCurrentTeb()->Peb + offset);
     while (log_config.opts[log_config.opts_cnt].name[0])
         log_config.opts_cnt++;
+    mark_config.opts = &log_config.opts[log_config.opts_cnt + 1];
+    while (mark_config.opts[mark_config.opts_cnt].name[0])
+        mark_config.opts_cnt++;
 
     option_init_done = TRUE;
 }

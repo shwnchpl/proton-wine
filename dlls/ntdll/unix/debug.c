@@ -71,6 +71,12 @@ static struct dbg_config log_config = {
     /* opts_cnt = */        0,
     /* opts = */            NULL
 };
+static struct dbg_config mark_config = {
+    /* default_flags = */   0,
+    /* opts_sz = */         0,
+    /* opts_cnt = */        0,
+    /* opts = */            NULL
+};
 
 static BOOL init_done;
 static BOOL option_init_done = FALSE;
@@ -208,10 +214,14 @@ static void debug_usage(void)
 /* initialize all options at startup */
 static void init_options(void)
 {
-    char *wine_debug = getenv("WINEDEBUG");
+    const char *wine_debug = getenv("WINEDEBUG");
+    const char *wine_mark = getenv("WINEMARK");
     struct stat st1, st2;
 
     option_init_done = TRUE;
+
+    if (wine_mark)
+        parse_options( &mark_config, wine_mark );
 
     /* check for stderr pointing to /dev/null */
     if (!fstat( 2, &st1 ) && S_ISCHR(st1.st_mode) &&
@@ -370,6 +380,12 @@ void dbg_init(void)
     free( log_config.opts );
     log_config.opts = options;
     log_config.opts[log_config.opts_cnt] = default_option;
+
+    memcpy( &options[log_config.opts_cnt + 1], mark_config.opts,
+            mark_config.opts_cnt * sizeof(*options) );
+    free( mark_config.opts );
+    mark_config.opts = &options[log_config.opts_cnt + 1];
+    mark_config.opts[mark_config.opts_cnt] = default_option;
 
     init_done = TRUE;
 }
