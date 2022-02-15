@@ -1500,7 +1500,7 @@ static void dump_init_first_thread_request( const struct init_first_thread_reque
 {
     fprintf( stderr, " unix_pid=%d", req->unix_pid );
     fprintf( stderr, ", unix_tid=%d", req->unix_tid );
-    fprintf( stderr, ", debug_level=%d", req->debug_level );
+    fprintf( stderr, ", debug_log_level=%d", req->debug_log_level );
     fprintf( stderr, ", reply_fd=%d", req->reply_fd );
     fprintf( stderr, ", wait_fd=%d", req->wait_fd );
 }

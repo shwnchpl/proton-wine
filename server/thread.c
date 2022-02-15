@@ -1676,7 +1676,7 @@ DECL_HANDLER(init_first_thread)
             set_thread_affinity( current, current->affinity );
     }
 
-    debug_level = max( debug_level, req->debug_level );
+    debug_level = max( debug_level, req->debug_log_level );
 
     reply->pid          = get_process_id( process );
     reply->tid          = get_thread_id( current );
