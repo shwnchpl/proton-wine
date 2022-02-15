@@ -61,6 +61,11 @@ struct __wine_debug_option
     char name[15];
 };
 
+enum  __wine_debug_target
+{
+   __WINE_DBTRG_LOG = 0
+};
+
 #ifndef WINE_NO_TRACE_MSGS
 # define __WINE_GET_DEBUGGING_TRACE(dbch) ((dbch)->log_flags & (1 << __WINE_DBCL_TRACE))
 #else
@@ -81,7 +86,8 @@ struct __wine_debug_option
 #define __WINE_GET_DEBUGGING(dbcl,dbch)  __WINE_GET_DEBUGGING##dbcl(dbch)
 
 #define __WINE_IS_DEBUG_ON(dbcl,dbch) \
-  (__WINE_GET_DEBUGGING##dbcl(dbch) && (__wine_dbg_get_channel_flags(dbch) & (1 << __WINE_DBCL##dbcl)))
+  (__WINE_GET_DEBUGGING##dbcl(dbch) && \
+   (__wine_dbg_get_channel_flags(dbch, __WINE_DBTRG_LOG) & (1 << __WINE_DBCL##dbcl)))
 
 #if defined(__GNUC__) || defined(__clang__)
 
@@ -150,7 +156,9 @@ struct __wine_debug_option
 #endif  /* !__GNUC__ && !__SUNPRO_C */
 
 extern int WINAPI __wine_dbg_write( const char *str, unsigned int len );
-extern unsigned char __cdecl __wine_dbg_get_channel_flags( struct __wine_debug_channel *channel );
+
+extern unsigned char __cdecl __wine_dbg_get_channel_flags( struct __wine_debug_channel *channel,
+                                                           enum __wine_debug_target target );
 extern const char * __cdecl __wine_dbg_strdup( const char *str );
 extern int __cdecl __wine_dbg_log_output( const char *str );
 extern int __cdecl __wine_dbg_header( enum __wine_debug_class cls, struct __wine_debug_channel *channel,

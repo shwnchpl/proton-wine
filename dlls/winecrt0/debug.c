@@ -34,7 +34,8 @@ WINE_DECLARE_DEBUG_CHANNEL(microsecs);
 
 static const char * (__cdecl *p__wine_dbg_strdup)( const char *str );
 static int (__cdecl *p__wine_dbg_log_output)( const char *str );
-static unsigned char (__cdecl *p__wine_dbg_get_channel_flags)( struct __wine_debug_channel *channel );
+static unsigned char (__cdecl *p__wine_dbg_get_channel_flags)( struct __wine_debug_channel *channel,
+                                                               enum __wine_debug_target target );
 static int (__cdecl *p__wine_dbg_header)( enum __wine_debug_class cls,
                                           struct __wine_debug_channel *channel,
                                           const char *function );
@@ -185,7 +186,8 @@ static int __cdecl fallback__wine_dbg_header( enum __wine_debug_class cls,
 {
     char buffer[200], *pos = buffer;
 
-    if (!(__wine_dbg_get_channel_flags( channel ) & (1 << cls))) return -1;
+    if (!(__wine_dbg_get_channel_flags( channel, __WINE_DBTRG_LOG ) & (1 << cls)))
+        return -1;
 
     /* skip header if partial line and no other thread came in between */
     if (partial_line_tid == GetCurrentThreadId()) return 0;
@@ -213,11 +215,15 @@ static int __cdecl fallback__wine_dbg_header( enum __wine_debug_class cls,
     return fwrite( buffer, 1, strlen(buffer), stderr );
 }
 
-static unsigned char __cdecl fallback__wine_dbg_get_channel_flags( struct __wine_debug_channel *channel )
+static unsigned char __cdecl fallback__wine_dbg_get_channel_flags( struct __wine_debug_channel *channel,
+                                                                   enum __wine_debug_target target )
 {
     int min, max, pos, res;
 
     if (nb_debug_options == -1) init_options();
+
+    if (target != __WINE_DBTRG_LOG)
+        return 0;
 
     min = 0;
     max = nb_debug_options - 1;
@@ -250,10 +256,11 @@ int __cdecl __wine_dbg_log_output( const char *str )
     return p__wine_dbg_log_output( str );
 }
 
-unsigned char __cdecl __wine_dbg_get_channel_flags( struct __wine_debug_channel *channel )
+unsigned char __cdecl __wine_dbg_get_channel_flags( struct __wine_debug_channel *channel,
+                                                    enum __wine_debug_target target )
 {
     LOAD_FUNC( __wine_dbg_get_channel_flags );
-    return p__wine_dbg_get_channel_flags( channel );
+    return p__wine_dbg_get_channel_flags( channel, target );
 }
 
 int __cdecl __wine_dbg_header( enum __wine_debug_class cls, struct __wine_debug_channel *channel,

@@ -106,7 +106,8 @@ static int append_output( struct debug_info *info, const char *str, size_t len )
  *
  * Get the flags to use for a given channel, possibly setting them too in case of lazy init
  */
-unsigned char __cdecl __wine_dbg_get_channel_flags( struct __wine_debug_channel *channel )
+unsigned char __cdecl __wine_dbg_get_channel_flags( struct __wine_debug_channel *channel,
+                                                    enum __wine_debug_target target )
 {
     int min, max, pos, res;
     struct dbg_config *conf;
@@ -114,8 +115,8 @@ unsigned char __cdecl __wine_dbg_get_channel_flags( struct __wine_debug_channel 
 
     if (!option_init_done) init_options();
 
-    conf = &log_config;
-    flags = &channel->log_flags;
+    if (target != __WINE_DBTRG_LOG)
+        return 0;
 
     if (!(*flags & (1 << __WINE_DBCL_INIT)))
         return *flags;
@@ -165,7 +166,8 @@ int __cdecl __wine_dbg_header( enum __wine_debug_class cls, struct __wine_debug_
     struct debug_info *info = get_info();
     char *pos = info->output;
 
-    if (!(__wine_dbg_get_channel_flags( channel ) & (1 << cls))) return -1;
+    if (!(__wine_dbg_get_channel_flags( channel, __WINE_DBTRG_LOG ) & (1 << cls)))
+        return -1;
 
     /* only print header if we are at the beginning of the line */
     if (info->out_pos) return 0;

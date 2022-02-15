@@ -65,9 +65,13 @@ static int cmp_name( const void *p1, const void *p2 )
 }
 
 /* get the flags to use for a given channel, possibly setting them too in case of lazy init */
-unsigned char __wine_dbg_get_channel_flags_obsolete( struct __wine_debug_channel *channel )
+unsigned char __wine_dbg_get_channel_flags_obsolete( struct __wine_debug_channel *channel,
+                                                     enum __wine_debug_target target )
 {
     if (nb_debug_options == -1) debug_init();
+
+    if (target != __WINE_DBTRG_LOG)
+        return 0;
 
     if (!(channel->log_flags & (1 << __WINE_DBCL_INIT)))
         return channel->log_flags;
@@ -266,7 +270,8 @@ int wine_dbg_log_obsolete( enum __wine_debug_class cls, struct __wine_debug_chan
     int ret;
     va_list valist;
 
-    if (!(__wine_dbg_get_channel_flags_obsolete( channel ) & (1 << cls))) return -1;
+    if (!(__wine_dbg_get_channel_flags_obsolete( channel, __WINE_DBTRG_LOG ) & (1 << cls)))
+        return -1;
 
     va_start(valist, format);
     ret = funcs.dbg_vlog( cls, channel, func, format, valist );
