@@ -146,7 +146,7 @@ struct __wine_debug_channel
 extern int WINAPI __wine_dbg_write( const char *str, unsigned int len );
 extern unsigned char __cdecl __wine_dbg_get_channel_flags( struct __wine_debug_channel *channel );
 extern const char * __cdecl __wine_dbg_strdup( const char *str );
-extern int __cdecl __wine_dbg_output( const char *str );
+extern int __cdecl __wine_dbg_log_output( const char *str );
 extern int __cdecl __wine_dbg_header( enum __wine_debug_class cls, struct __wine_debug_channel *channel,
                                       const char *function );
 extern void __cdecl __wine_set_unix_env( const char *var, const char *val );
@@ -192,7 +192,7 @@ static inline int __wine_dbg_cdecl wine_dbg_printf( const char *format, ... )
     __wine_dbg_va_start( args, format );
     vsnprintf( buffer, sizeof(buffer), format, args );
     __wine_dbg_va_end( args );
-    return __wine_dbg_output( buffer );
+    return __wine_dbg_log_output( buffer );
 }
 
 static int __wine_dbg_cdecl wine_dbg_log( enum __wine_debug_class cls,
@@ -216,7 +216,7 @@ static inline int __wine_dbg_cdecl wine_dbg_log( enum __wine_debug_class cls,
     __wine_dbg_va_start( args, format );
     vsnprintf( buffer, sizeof(buffer), format, args );
     __wine_dbg_va_end( args );
-    ret += __wine_dbg_output( buffer );
+    ret += __wine_dbg_log_output( buffer );
     return ret;
 }
 

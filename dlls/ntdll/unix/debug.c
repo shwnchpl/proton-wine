@@ -82,7 +82,7 @@ static int append_output( struct debug_info *info, const char *str, size_t len )
 {
     if (len >= sizeof(info->output) - info->out_pos)
     {
-       fprintf( stderr, "wine_dbg_output: debugstr buffer overflow (contents: '%s')\n", info->output );
+       fprintf( stderr, "wine_dbg_log_output: debugstr buffer overflow (contents: '%s')\n", info->output );
        info->out_pos = 0;
        abort();
     }
@@ -262,9 +262,9 @@ int WINAPI __wine_dbg_write( const char *str, unsigned int len )
 }
 
 /***********************************************************************
- *		__wine_dbg_output  (NTDLL.@)
+ *		__wine_dbg_log_output  (NTDLL.@)
  */
-int __cdecl __wine_dbg_output( const char *str )
+int __cdecl __wine_dbg_log_output( const char *str )
 {
     struct debug_info *info = get_info();
     const char *end = strrchr( str, '\n' );

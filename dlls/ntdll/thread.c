@@ -166,9 +166,9 @@ int __cdecl __wine_dbg_header( enum __wine_debug_class cls, struct __wine_debug_
 }
 
 /***********************************************************************
- *		__wine_dbg_output  (NTDLL.@)
+ *		__wine_dbg_log_output  (NTDLL.@)
  */
-int __cdecl __wine_dbg_output( const char *str )
+int __cdecl __wine_dbg_log_output( const char *str )
 {
     struct debug_info *info = get_info();
     const char *end = strrchr( str, '\n' );
