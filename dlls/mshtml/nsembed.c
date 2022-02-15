@@ -448,11 +448,11 @@ static void set_environment(LPCWSTR gre_path)
 
     SetEnvironmentVariableW(L"XPCOM_DEBUG_BREAK", L"warn");
 
-    if(TRACE_ON(gecko))
+    if(TRACE_LOG_ON(gecko))
         debug_level = 5;
-    else if(WARN_ON(gecko))
+    else if(WARN_LOG_ON(gecko))
         debug_level = 2;
-    else if(ERR_ON(gecko))
+    else if(ERR_LOG_ON(gecko))
         debug_level = 1;
 
     swprintf(buf, ARRAY_SIZE(buf), L"all:%d", debug_level);
