@@ -52,6 +52,7 @@ enum __wine_debug_class
 struct __wine_debug_channel
 {
     unsigned char log_flags;
+    unsigned char mark_flags;
     char name[15];
 };
 
@@ -63,7 +64,8 @@ struct __wine_debug_option
 
 enum  __wine_debug_target
 {
-   __WINE_DBTRG_LOG = 0
+   __WINE_DBTRG_LOG = 0,
+   __WINE_DBTRG_MARK
 };
 
 #ifndef WINE_NO_TRACE_MSGS
@@ -518,9 +520,9 @@ static inline const char *wine_dbgstr_variant( const VARIANT *v )
 #define WINE_ERR_ON(ch)            (WINE_ERR_LOG_ON(ch))
 
 #define WINE_DECLARE_DEBUG_CHANNEL(ch) \
-    static struct __wine_debug_channel __wine_dbch_##ch = { 0xff, #ch }
+    static struct __wine_debug_channel __wine_dbch_##ch = { 0xff, 0xff, #ch }
 #define WINE_DEFAULT_DEBUG_CHANNEL(ch) \
-    static struct __wine_debug_channel __wine_dbch_##ch = { 0xff, #ch }; \
+    static struct __wine_debug_channel __wine_dbch_##ch = { 0xff, 0xff, #ch }; \
     static struct __wine_debug_channel * const __wine_dbch___default = &__wine_dbch_##ch
 
 #define WINE_MESSAGE               wine_dbg_printf

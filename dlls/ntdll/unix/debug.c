@@ -267,8 +267,16 @@ unsigned char __cdecl __wine_dbg_get_channel_flags( struct __wine_debug_channel 
 
     if (!option_init_done) init_options();
 
-    if (target != __WINE_DBTRG_LOG)
-        return 0;
+    if (target == __WINE_DBTRG_MARK)
+    {
+        conf = &mark_config;
+        flags = &channel->mark_flags;
+    }
+    else
+    {
+        conf = &log_config;
+        flags = &channel->log_flags;
+    }
 
     if (!(*flags & (1 << __WINE_DBCL_INIT)))
         return *flags;
