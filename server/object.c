@@ -71,7 +71,7 @@ void dump_objects(void)
 
     LIST_FOR_EACH_ENTRY( ptr, &object_list, struct object, obj_list )
     {
-        fprintf( stderr, "%p:%d: ", ptr, ptr->refcount );
+        SERVER_LOG( LOG_ALWAYS, "%p:%d: ", ptr, ptr->refcount );
         dump_object_name( ptr );
         ptr->ops->dump( ptr, 1 );
     }
@@ -392,7 +392,7 @@ static void dump_name( struct object *obj )
 
     if (!name) return;
     if (name->parent) dump_name( name->parent );
-    fputs( "\\\\", stderr );
+    SERVER_LOG( LOG_ALWAYS, "\\\\" );
     dump_strW( name->name, name->len, stderr, "[]" );
 }
 
@@ -400,9 +400,9 @@ static void dump_name( struct object *obj )
 void dump_object_name( struct object *obj )
 {
     if (!obj->name) return;
-    fputc( '[', stderr );
+    SERVER_LOG( LOG_ALWAYS, "[" );
     dump_name( obj );
-    fputs( "] ", stderr );
+    SERVER_LOG( LOG_ALWAYS, "] " );
 }
 
 /* unlink a named object from its namespace, without freeing the object itself */

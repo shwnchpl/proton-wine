@@ -526,13 +526,13 @@ void sock_init(void)
     switch ( sock_shutdown_type )
     {
     case SOCK_SHUTDOWN_EOF:
-        if (debug_level) fprintf( stderr, "sock_init: shutdown() causes EOF\n" );
+        SERVER_LOG( LOG_DEBUG, "sock_init: shutdown() causes EOF\n" );
         break;
     case SOCK_SHUTDOWN_POLLHUP:
-        if (debug_level) fprintf( stderr, "sock_init: shutdown() causes POLLHUP\n" );
+        SERVER_LOG( LOG_DEBUG, "sock_init: shutdown() causes POLLHUP\n" );
         break;
     default:
-        fprintf( stderr, "sock_init: ERROR in sock_check_pollhup()\n" );
+        SERVER_LOG( LOG_ALWAYS, "sock_init: ERROR in sock_check_pollhup()\n" );
         sock_shutdown_type = SOCK_SHUTDOWN_EOF;
     }
 }
@@ -541,8 +541,7 @@ static int sock_reselect( struct sock *sock )
 {
     int ev = sock_get_poll_events( sock->fd );
 
-    if (debug_level)
-        fprintf(stderr,"sock_reselect(%p): new mask %x\n", sock, ev);
+    SERVER_LOG( LOG_DEBUG, "sock_reselect(%p): new mask %x\n", sock, ev);
 
     set_fd_events( sock->fd, ev );
     return ev;
@@ -581,13 +580,13 @@ static void sock_wake_up( struct sock *sock )
 
     if (sock->event)
     {
-        if (debug_level) fprintf(stderr, "signalling events %x ptr %p\n", events, sock->event );
+        SERVER_LOG( LOG_DEBUG, "signalling events %x ptr %p\n", events, sock->event );
         if (events)
             set_event( sock->event );
     }
     if (sock->window)
     {
-        if (debug_level) fprintf(stderr, "signalling events %x win %08x\n", events, sock->window );
+        SERVER_LOG( LOG_DEBUG, "signalling events %x win %08x\n", events, sock->window );
         for (i = 0; i < ARRAY_SIZE(event_bitorder); i++)
         {
             enum afd_poll_bit event = event_bitorder[i];
@@ -701,7 +700,7 @@ static void complete_async_accept( struct sock *sock, struct accept_req *req )
     struct sock *acceptsock = req->acceptsock;
     struct async *async = req->async;
 
-    if (debug_level) fprintf( stderr, "completing accept request for socket %p\n", sock );
+    SERVER_LOG( LOG_DEBUG, "completing accept request for socket %p\n", sock );
 
     if (acceptsock)
     {
@@ -738,7 +737,7 @@ static void complete_async_accept( struct sock *sock, struct accept_req *req )
 
 static void complete_async_accept_recv( struct accept_req *req )
 {
-    if (debug_level) fprintf( stderr, "completing accept recv request for socket %p\n", req->acceptsock );
+    SERVER_LOG( LOG_DEBUG, "completing accept recv request for socket %p\n", req->acceptsock );
 
     assert( req->recv_len );
 
@@ -763,7 +762,7 @@ static void complete_async_connect( struct sock *sock )
     size_t len;
     int ret;
 
-    if (debug_level) fprintf( stderr, "completing connect request for socket %p\n", sock );
+    SERVER_LOG( LOG_DEBUG, "completing connect request for socket %p\n", sock );
 
     sock->state = SOCK_CONNECTED;
 
@@ -926,8 +925,7 @@ static void complete_async_polls( struct sock *sock, int event, int error )
             if (req->sockets[i].sock != sock) continue;
             if (!(req->sockets[i].mask & flags)) continue;
 
-            if (debug_level)
-                fprintf( stderr, "completing poll for socket %p, wanted %#x got %#x\n",
+            SERVER_LOG(LOG_DEBUG, "completing poll for socket %p, wanted %#x got %#x\n",
                          sock, req->sockets[i].mask, flags );
 
             req->sockets[i].flags = req->sockets[i].mask & flags;
@@ -974,14 +972,14 @@ static int sock_dispatch_asyncs( struct sock *sock, int event, int error )
 
     if (event & (POLLIN | POLLPRI) && async_waiting( &sock->read_q ))
     {
-        if (debug_level) fprintf( stderr, "activating read queue for socket %p\n", sock );
+        SERVER_LOG( LOG_DEBUG, "activating read queue for socket %p\n", sock );
         async_wake_up( &sock->read_q, STATUS_ALERTED );
         event &= ~(POLLIN | POLLPRI);
     }
 
     if (event & POLLOUT && async_waiting( &sock->write_q ))
     {
-        if (debug_level) fprintf( stderr, "activating write queue for socket %p\n", sock );
+        SERVER_LOG( LOG_DEBUG, "activating write queue for socket %p\n", sock );
         async_wake_up( &sock->write_q, STATUS_ALERTED );
         event &= ~POLLOUT;
     }
@@ -1073,8 +1071,7 @@ static void sock_poll_event( struct fd *fd, int event )
     int error = 0;
 
     assert( sock->obj.ops == &sock_ops );
-    if (debug_level)
-        fprintf(stderr, "socket %p select event: %x\n", sock, event);
+    SERVER_LOG( LOG_DEBUG, "socket %p select event: %x\n", sock, event);
 
     /* we may change event later, remove from loop here */
     if (event & (POLLERR|POLLHUP)) set_fd_events( sock->fd, -1 );
@@ -1127,8 +1124,7 @@ static void sock_poll_event( struct fd *fd, int event )
                 {
                     error = errno;
                     event |= POLLERR;
-                    if ( debug_level )
-                        fprintf( stderr, "recv error on socket %p: %d\n", sock, errno );
+                    SERVER_LOG( LOG_DEBUG, "recv error on socket %p: %d\n", sock, errno );
                 }
             }
         }
@@ -1140,9 +1136,7 @@ static void sock_poll_event( struct fd *fd, int event )
         else if (event & (POLLHUP | POLLERR))
         {
             sock->aborted = 1;
-
-            if (debug_level)
-                fprintf( stderr, "socket %p aborted by error %d, event %#x\n", sock, error, event );
+            SERVER_LOG( LOG_DEBUG, "socket %p aborted by error %d, event %#x\n", sock, error, event );
         }
 
         if (hangup_seen)
@@ -1162,7 +1156,7 @@ static void sock_dump( struct object *obj, int verbose )
 {
     struct sock *sock = (struct sock *)obj;
     assert( obj->ops == &sock_ops );
-    fprintf( stderr, "Socket fd=%p, state=%x, mask=%x, pending=%x, reported=%x\n",
+    SERVER_LOG( LOG_ALWAYS, "Socket fd=%p, state=%x, mask=%x, pending=%x, reported=%x\n",
             sock->fd, sock->state,
             sock->mask, sock->pending_events, sock->reported_events );
 }
@@ -1872,8 +1866,7 @@ static int bind_to_iface_name( int fd, in_addr_t bind_addr, const char *name )
         return 0;
 
     /* SO_BINDTODEVICE requires NET_CAP_RAW until Linux 5.7. */
-    if (debug_level)
-        fprintf( stderr, "setsockopt SO_BINDTODEVICE fd %d, name %s failed: %s, falling back to SO_REUSE_ADDR\n",
+    SERVER_LOG(LOG_DEBUG, "setsockopt SO_BINDTODEVICE fd %d, name %s failed: %s, falling back to SO_REUSE_ADDR\n",
                  fd, name, strerror( errno ));
 
     if (!(index = if_nametoindex( name )))
@@ -1938,8 +1931,7 @@ static int bind_to_interface( struct sock *sock, const struct sockaddr_in *addr 
         {
             if ((err = bind_to_iface_name( fd, bind_addr, ifaddr->ifa_name )) < 0)
             {
-                if (debug_level)
-                    fprintf( stderr, "failed to bind to interface: %s\n", strerror( errno ) );
+                SERVER_LOG( LOG_DEBUG, "failed to bind to interface: %s\n", strerror( errno ) );
             }
             break;
         }
@@ -1964,8 +1956,7 @@ static unsigned int get_ipv6_interface_index( const struct in6_addr *addr )
 
             if (!index)
             {
-                if (debug_level)
-                    fprintf( stderr, "Unable to look up interface index for %s: %s\n",
+                SERVER_LOG(LOG_DEBUG, "Unable to look up interface index for %s: %s\n",
                              ifaddr->ifa_name, strerror( errno ) );
                 continue;
             }
@@ -2641,7 +2632,7 @@ static void sock_ioctl( struct fd *fd, ioctl_code_t code, struct async *async )
         /* Quake (and similar family) fails if we can't bind to an IPX address. This often
          * doesn't work on Linux, so just fake success. */
         if (unix_addr.addr.sa_family == AF_IPX)
-            fprintf( stderr, "wine: HACK: Faking AF_IPX bind success.\n" );
+            SERVER_LOG( LOG_ALWAYS, "wine: HACK: Faking AF_IPX bind success.\n" );
         else if (bind( unix_fd, &bind_addr.addr, unix_len ) < 0)
         {
             if (errno == EADDRINUSE)
@@ -3167,7 +3158,7 @@ static const struct fd_ops ifchange_fd_ops =
 static void ifchange_dump( struct object *obj, int verbose )
 {
     assert( obj->ops == &ifchange_ops );
-    fprintf( stderr, "Interface change\n" );
+    SERVER_LOG( LOG_ALWAYS, "Interface change\n" );
 }
 
 static struct fd *ifchange_get_fd( struct object *obj )
@@ -3373,7 +3364,7 @@ static const struct object_ops socket_device_ops =
 
 static void socket_device_dump( struct object *obj, int verbose )
 {
-    fputs( "Socket device\n", stderr );
+    SERVER_LOG( LOG_ALWAYS, "Socket device\n" );
 }
 
 static struct object *socket_device_lookup_name( struct object *obj, struct unicode_str *name,

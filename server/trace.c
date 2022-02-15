@@ -61,31 +61,31 @@ static inline void remove_data( data_size_t size )
 
 static void dump_uints( const char *prefix, const unsigned int *ptr, int len )
 {
-    fprintf( stderr, "%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     while (len > 0)
     {
-        fprintf( stderr, "%08x", *ptr++ );
-        if (--len) fputc( ',', stderr );
+        SERVER_LOG( LOG_ALWAYS, "%08x", *ptr++ );
+        if (--len) SERVER_LOG( LOG_ALWAYS, "," );
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS,  "}" );
 }
 
 static void dump_handles( const char *prefix, const obj_handle_t *data, data_size_t size )
 {
     data_size_t len = size / sizeof(*data);
 
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     while (len > 0)
     {
-        fprintf( stderr, "%04x", *data++ );
-        if (--len) fputc( ',', stderr );
+        SERVER_LOG( LOG_ALWAYS, "%04x", *data++ );
+        if (--len) SERVER_LOG( LOG_ALWAYS, "," );
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
 }
 
 static void dump_timeout( const char *prefix, const timeout_t *time )
 {
-    fprintf( stderr, "%s%s", prefix, get_timeout_str(*time) );
+    SERVER_LOG( LOG_ALWAYS, "%s%s", prefix, get_timeout_str(*time) );
 }
 
 static void dump_abstime( const char *prefix, const abstime_t *when )
@@ -97,9 +97,9 @@ static void dump_abstime( const char *prefix, const abstime_t *when )
 static void dump_uint64( const char *prefix, const unsigned __int64 *val )
 {
     if ((unsigned int)*val != *val)
-        fprintf( stderr, "%s%x%08x", prefix, (unsigned int)(*val >> 32), (unsigned int)*val );
+        SERVER_LOG( LOG_ALWAYS, "%s%x%08x", prefix, (unsigned int)(*val >> 32), (unsigned int)*val );
     else
-        fprintf( stderr, "%s%08x", prefix, (unsigned int)*val );
+        SERVER_LOG( LOG_ALWAYS, "%s%08x", prefix, (unsigned int)*val );
 }
 
 static void dump_uint128( const char *prefix, const unsigned __int64 val[2] )
@@ -107,20 +107,20 @@ static void dump_uint128( const char *prefix, const unsigned __int64 val[2] )
     unsigned __int64 low = val[0], high = val[1];
 
     if ((unsigned int)high != high)
-        fprintf( stderr, "%s%x%08x%08x%08x", prefix, (unsigned int)(high >> 32), (unsigned int)high,
+        SERVER_LOG( LOG_ALWAYS, "%s%x%08x%08x%08x", prefix, (unsigned int)(high >> 32), (unsigned int)high,
                  (unsigned int)(low >> 32), (unsigned int)low );
     else if (high)
-        fprintf( stderr, "%s%x%08x%08x", prefix, (unsigned int)high,
+        SERVER_LOG( LOG_ALWAYS, "%s%x%08x%08x", prefix, (unsigned int)high,
                  (unsigned int)(low >> 32), (unsigned int)low );
     else if ((unsigned int)low != low)
-        fprintf( stderr, "%s%x%08x", prefix, (unsigned int)(low >> 32), (unsigned int)low );
+        SERVER_LOG( LOG_ALWAYS, "%s%x%08x", prefix, (unsigned int)(low >> 32), (unsigned int)low );
     else
-        fprintf( stderr, "%s%x", prefix, (unsigned int)low );
+        SERVER_LOG( LOG_ALWAYS, "%s%x", prefix, (unsigned int)low );
 }
 
 static void dump_rectangle( const char *prefix, const rectangle_t *rect )
 {
-    fprintf( stderr, "%s{%d,%d;%d,%d}", prefix,
+    SERVER_LOG( LOG_ALWAYS, "%s{%d,%d;%d,%d}", prefix,
              rect->left, rect->top, rect->right, rect->bottom );
 }
 
@@ -128,7 +128,7 @@ static void dump_ioctl_code( const char *prefix, const ioctl_code_t *code )
 {
     switch(*code)
     {
-#define CASE(c) case c: fprintf( stderr, "%s%s", prefix, #c ); break
+#define CASE(c) case c: SERVER_LOG( LOG_ALWAYS, "%s%s", prefix, #c ); break
         CASE(IOCTL_CONDRV_ACTIVATE);
         CASE(IOCTL_CONDRV_BIND_PID);
         CASE(IOCTL_CONDRV_CTRL_EVENT);
@@ -157,41 +157,41 @@ static void dump_ioctl_code( const char *prefix, const ioctl_code_t *code )
         CASE(IOCTL_SERIAL_SET_TIMEOUTS);
         CASE(IOCTL_SERIAL_SET_WAIT_MASK);
         CASE(WS_SIO_ADDRESS_LIST_CHANGE);
-        default: fprintf( stderr, "%s%08x", prefix, *code ); break;
+        default: SERVER_LOG( LOG_ALWAYS, "%s%08x", prefix, *code ); break;
 #undef CASE
     }
 }
 
 static void dump_apc_call( const char *prefix, const apc_call_t *call )
 {
-    fprintf( stderr, "%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     switch(call->type)
     {
     case APC_NONE:
-        fprintf( stderr, "APC_NONE" );
+        SERVER_LOG( LOG_ALWAYS, "APC_NONE" );
         break;
     case APC_USER:
         dump_uint64( "APC_USER,func=", &call->user.func );
         dump_uint64( ",args={", &call->user.args[0] );
         dump_uint64( ",", &call->user.args[1] );
         dump_uint64( ",", &call->user.args[2] );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         break;
     case APC_ASYNC_IO:
         dump_uint64( "APC_ASYNC_IO,user=", &call->async_io.user );
         dump_uint64( ",sb=", &call->async_io.sb );
-        fprintf( stderr, ",status=%s,result=%u", get_status_name(call->async_io.status), call->async_io.result );
+        SERVER_LOG( LOG_ALWAYS, ",status=%s,result=%u", get_status_name(call->async_io.status), call->async_io.result );
         break;
     case APC_VIRTUAL_ALLOC:
         dump_uint64( "APC_VIRTUAL_ALLOC,addr==", &call->virtual_alloc.addr );
         dump_uint64( ",size=", &call->virtual_alloc.size );
         dump_uint64( ",zero_bits=", &call->virtual_alloc.zero_bits );
-        fprintf( stderr, ",op_type=%x,prot=%x", call->virtual_alloc.op_type, call->virtual_alloc.prot );
+        SERVER_LOG( LOG_ALWAYS, ",op_type=%x,prot=%x", call->virtual_alloc.op_type, call->virtual_alloc.prot );
         break;
     case APC_VIRTUAL_FREE:
         dump_uint64( "APC_VIRTUAL_FREE,addr=", &call->virtual_free.addr );
         dump_uint64( ",size=", &call->virtual_free.size );
-        fprintf( stderr, ",op_type=%x", call->virtual_free.op_type );
+        SERVER_LOG( LOG_ALWAYS, ",op_type=%x", call->virtual_free.op_type );
         break;
     case APC_VIRTUAL_QUERY:
         dump_uint64( "APC_VIRTUAL_QUERY,addr=", &call->virtual_query.addr );
@@ -199,7 +199,7 @@ static void dump_apc_call( const char *prefix, const apc_call_t *call )
     case APC_VIRTUAL_PROTECT:
         dump_uint64( "APC_VIRTUAL_PROTECT,addr=", &call->virtual_protect.addr );
         dump_uint64( ",size=", &call->virtual_protect.size );
-        fprintf( stderr, ",prot=%x", call->virtual_protect.prot );
+        SERVER_LOG( LOG_ALWAYS, ",prot=%x", call->virtual_protect.prot );
         break;
     case APC_VIRTUAL_FLUSH:
         dump_uint64( "APC_VIRTUAL_FLUSH,addr=", &call->virtual_flush.addr );
@@ -214,12 +214,12 @@ static void dump_apc_call( const char *prefix, const apc_call_t *call )
         dump_uint64( ",size=", &call->virtual_unlock.size );
         break;
     case APC_MAP_VIEW:
-        fprintf( stderr, "APC_MAP_VIEW,handle=%04x", call->map_view.handle );
+        SERVER_LOG( LOG_ALWAYS, "APC_MAP_VIEW,handle=%04x", call->map_view.handle );
         dump_uint64( ",addr=", &call->map_view.addr );
         dump_uint64( ",size=", &call->map_view.size );
         dump_uint64( ",offset=", &call->map_view.offset );
         dump_uint64( ",zero_bits=", &call->map_view.zero_bits );
-        fprintf( stderr, ",alloc_type=%x,prot=%x", call->map_view.alloc_type, call->map_view.prot );
+        SERVER_LOG( LOG_ALWAYS, ",alloc_type=%x,prot=%x", call->map_view.alloc_type, call->map_view.prot );
         break;
     case APC_UNMAP_VIEW:
         dump_uint64( "APC_UNMAP_VIEW,addr=", &call->unmap_view.addr );
@@ -230,112 +230,112 @@ static void dump_apc_call( const char *prefix, const apc_call_t *call )
         dump_uint64( ",zero_bits=", &call->create_thread.zero_bits );
         dump_uint64( ",reserve=", &call->create_thread.reserve );
         dump_uint64( ",commit=", &call->create_thread.commit );
-        fprintf( stderr, ",flags=%x", call->create_thread.flags );
+        SERVER_LOG( LOG_ALWAYS, ",flags=%x", call->create_thread.flags );
         break;
     case APC_DUP_HANDLE:
-        fprintf( stderr, "APC_DUP_HANDLE,src_handle=%04x,dst_process=%04x,access=%x,attributes=%x,options=%x",
+        SERVER_LOG( LOG_ALWAYS, "APC_DUP_HANDLE,src_handle=%04x,dst_process=%04x,access=%x,attributes=%x,options=%x",
                  call->dup_handle.src_handle, call->dup_handle.dst_process, call->dup_handle.access,
                  call->dup_handle.attributes, call->dup_handle.options );
         break;
     default:
-        fprintf( stderr, "type=%u", call->type );
+        SERVER_LOG( LOG_ALWAYS, "type=%u", call->type );
         break;
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
 }
 
 static void dump_apc_result( const char *prefix, const apc_result_t *result )
 {
-    fprintf( stderr, "%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     switch(result->type)
     {
     case APC_NONE:
         break;
     case APC_ASYNC_IO:
-        fprintf( stderr, "APC_ASYNC_IO,status=%s,total=%u",
+        SERVER_LOG( LOG_ALWAYS, "APC_ASYNC_IO,status=%s,total=%u",
                  get_status_name( result->async_io.status ), result->async_io.total );
         break;
     case APC_VIRTUAL_ALLOC:
-        fprintf( stderr, "APC_VIRTUAL_ALLOC,status=%s",
+        SERVER_LOG( LOG_ALWAYS, "APC_VIRTUAL_ALLOC,status=%s",
                  get_status_name( result->virtual_alloc.status ));
         dump_uint64( ",addr=", &result->virtual_alloc.addr );
         dump_uint64( ",size=", &result->virtual_alloc.size );
         break;
     case APC_VIRTUAL_FREE:
-        fprintf( stderr, "APC_VIRTUAL_FREE,status=%s",
+        SERVER_LOG( LOG_ALWAYS, "APC_VIRTUAL_FREE,status=%s",
                  get_status_name( result->virtual_free.status ));
         dump_uint64( ",addr=", &result->virtual_free.addr );
         dump_uint64( ",size=", &result->virtual_free.size );
         break;
     case APC_VIRTUAL_QUERY:
-        fprintf( stderr, "APC_VIRTUAL_QUERY,status=%s",
+        SERVER_LOG( LOG_ALWAYS, "APC_VIRTUAL_QUERY,status=%s",
                  get_status_name( result->virtual_query.status ));
         dump_uint64( ",base=", &result->virtual_query.base );
         dump_uint64( ",alloc_base=", &result->virtual_query.alloc_base );
         dump_uint64( ",size=", &result->virtual_query.size );
-        fprintf( stderr, ",state=%x,prot=%x,alloc_prot=%x,alloc_type=%x",
+        SERVER_LOG( LOG_ALWAYS, ",state=%x,prot=%x,alloc_prot=%x,alloc_type=%x",
                  result->virtual_query.state, result->virtual_query.prot,
                  result->virtual_query.alloc_prot, result->virtual_query.alloc_type );
         break;
     case APC_VIRTUAL_PROTECT:
-        fprintf( stderr, "APC_VIRTUAL_PROTECT,status=%s",
+        SERVER_LOG( LOG_ALWAYS, "APC_VIRTUAL_PROTECT,status=%s",
                  get_status_name( result->virtual_protect.status ));
         dump_uint64( ",addr=", &result->virtual_protect.addr );
         dump_uint64( ",size=", &result->virtual_protect.size );
-        fprintf( stderr, ",prot=%x", result->virtual_protect.prot );
+        SERVER_LOG( LOG_ALWAYS, ",prot=%x", result->virtual_protect.prot );
         break;
     case APC_VIRTUAL_FLUSH:
-        fprintf( stderr, "APC_VIRTUAL_FLUSH,status=%s",
+        SERVER_LOG( LOG_ALWAYS, "APC_VIRTUAL_FLUSH,status=%s",
                  get_status_name( result->virtual_flush.status ));
         dump_uint64( ",addr=", &result->virtual_flush.addr );
         dump_uint64( ",size=", &result->virtual_flush.size );
         break;
     case APC_VIRTUAL_LOCK:
-        fprintf( stderr, "APC_VIRTUAL_LOCK,status=%s",
+        SERVER_LOG( LOG_ALWAYS, "APC_VIRTUAL_LOCK,status=%s",
                  get_status_name( result->virtual_lock.status ));
         dump_uint64( ",addr=", &result->virtual_lock.addr );
         dump_uint64( ",size=", &result->virtual_lock.size );
         break;
     case APC_VIRTUAL_UNLOCK:
-        fprintf( stderr, "APC_VIRTUAL_UNLOCK,status=%s",
+        SERVER_LOG( LOG_ALWAYS, "APC_VIRTUAL_UNLOCK,status=%s",
                  get_status_name( result->virtual_unlock.status ));
         dump_uint64( ",addr=", &result->virtual_unlock.addr );
         dump_uint64( ",size=", &result->virtual_unlock.size );
         break;
     case APC_MAP_VIEW:
-        fprintf( stderr, "APC_MAP_VIEW,status=%s",
+        SERVER_LOG( LOG_ALWAYS, "APC_MAP_VIEW,status=%s",
                  get_status_name( result->map_view.status ));
         dump_uint64( ",addr=", &result->map_view.addr );
         dump_uint64( ",size=", &result->map_view.size );
         break;
     case APC_UNMAP_VIEW:
-        fprintf( stderr, "APC_UNMAP_VIEW,status=%s",
+        SERVER_LOG( LOG_ALWAYS, "APC_UNMAP_VIEW,status=%s",
                  get_status_name( result->unmap_view.status ) );
         break;
     case APC_CREATE_THREAD:
-        fprintf( stderr, "APC_CREATE_THREAD,status=%s,pid=%04x,tid=%04x,handle=%04x",
+        SERVER_LOG( LOG_ALWAYS, "APC_CREATE_THREAD,status=%s,pid=%04x,tid=%04x,handle=%04x",
                  get_status_name( result->create_thread.status ),
                  result->create_thread.pid, result->create_thread.tid, result->create_thread.handle );
         break;
     case APC_DUP_HANDLE:
-        fprintf( stderr, "APC_DUP_HANDLE,status=%s,handle=%04x",
+        SERVER_LOG( LOG_ALWAYS, "APC_DUP_HANDLE,status=%s,handle=%04x",
                  get_status_name( result->dup_handle.status ), result->dup_handle.handle );
         break;
     default:
-        fprintf( stderr, "type=%u", result->type );
+        SERVER_LOG( LOG_ALWAYS, "type=%u", result->type );
         break;
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
 }
 
 static void dump_async_data( const char *prefix, const async_data_t *data )
 {
-    fprintf( stderr, "%s{handle=%04x,event=%04x", prefix, data->handle, data->event );
+    SERVER_LOG( LOG_ALWAYS, "%s{handle=%04x,event=%04x", prefix, data->handle, data->event );
     dump_uint64( ",iosb=", &data->iosb );
     dump_uint64( ",user=", &data->user );
     dump_uint64( ",apc=", &data->apc );
     dump_uint64( ",apc_context=", &data->apc_context );
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
 }
 
 static void dump_irp_params( const char *prefix, const irp_params_t *data )
@@ -343,59 +343,59 @@ static void dump_irp_params( const char *prefix, const irp_params_t *data )
     switch (data->type)
     {
     case IRP_CALL_NONE:
-        fprintf( stderr, "%s{NONE}", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{NONE}", prefix );
         break;
     case IRP_CALL_CREATE:
-        fprintf( stderr, "%s{CREATE,access=%08x,sharing=%08x,options=%08x",
+        SERVER_LOG( LOG_ALWAYS, "%s{CREATE,access=%08x,sharing=%08x,options=%08x",
                  prefix, data->create.access, data->create.sharing, data->create.options );
         dump_uint64( ",device=", &data->create.device );
-        fprintf( stderr, ",file=%08x}", data->create.file );
+        SERVER_LOG( LOG_ALWAYS, ",file=%08x}", data->create.file );
         break;
     case IRP_CALL_CLOSE:
-        fprintf( stderr, "%s{CLOSE", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{CLOSE", prefix );
         dump_uint64( ",file=", &data->close.file );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         break;
     case IRP_CALL_READ:
-        fprintf( stderr, "%s{READ,key=%08x,out_size=%u", prefix, data->read.key,
+        SERVER_LOG( LOG_ALWAYS, "%s{READ,key=%08x,out_size=%u", prefix, data->read.key,
                  data->read.out_size );
         dump_uint64( ",pos=", &data->read.pos );
         dump_uint64( ",file=", &data->read.file );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         break;
     case IRP_CALL_WRITE:
-        fprintf( stderr, "%s{WRITE,key=%08x", prefix, data->write.key );
+        SERVER_LOG( LOG_ALWAYS, "%s{WRITE,key=%08x", prefix, data->write.key );
         dump_uint64( ",pos=", &data->write.pos );
         dump_uint64( ",file=", &data->write.file );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         break;
     case IRP_CALL_FLUSH:
-        fprintf( stderr, "%s{FLUSH", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{FLUSH", prefix );
         dump_uint64( ",file=", &data->flush.file );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         break;
     case IRP_CALL_IOCTL:
-        fprintf( stderr, "%s{IOCTL", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{IOCTL", prefix );
         dump_ioctl_code( ",code=", &data->ioctl.code );
-        fprintf( stderr, ",out_size=%u", data->ioctl.out_size );
+        SERVER_LOG( LOG_ALWAYS, ",out_size=%u", data->ioctl.out_size );
         dump_uint64( ",file=", &data->ioctl.file );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         break;
     case IRP_CALL_VOLUME:
-        fprintf( stderr, "%s{VOLUME,class=%u,out_size=%u", prefix,
+        SERVER_LOG( LOG_ALWAYS, "%s{VOLUME,class=%u,out_size=%u", prefix,
                  data->volume.info_class, data->volume.out_size );
         dump_uint64( ",file=", &data->volume.file );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         break;
     case IRP_CALL_FREE:
-        fprintf( stderr, "%s{FREE", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{FREE", prefix );
         dump_uint64( ",obj=", &data->free.obj );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         break;
     case IRP_CALL_CANCEL:
-        fprintf( stderr, "%s{CANCEL", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{CANCEL", prefix );
         dump_uint64( ",irp=", &data->cancel.irp );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         break;
     }
 }
@@ -405,20 +405,20 @@ static void dump_rawinput( const char *prefix, const union rawinput *rawinput )
     switch (rawinput->type)
     {
     case RIM_TYPEMOUSE:
-        fprintf( stderr, "%s{type=MOUSE,x=%d,y=%d,data=%08x}", prefix, rawinput->mouse.x,
+        SERVER_LOG( LOG_ALWAYS, "%s{type=MOUSE,x=%d,y=%d,data=%08x}", prefix, rawinput->mouse.x,
                  rawinput->mouse.y, rawinput->mouse.data );
         break;
     case RIM_TYPEKEYBOARD:
-        fprintf( stderr, "%s{type=KEYBOARD,message=%04x,vkey=%04hx,scan=%04hx}", prefix,
+        SERVER_LOG( LOG_ALWAYS, "%s{type=KEYBOARD,message=%04x,vkey=%04hx,scan=%04hx}", prefix,
                  rawinput->kbd.message, rawinput->kbd.vkey, rawinput->kbd.scan );
         break;
     case RIM_TYPEHID:
-        fprintf( stderr, "%s{type=HID,device=%04x,param=%04x,page=%04hx,usage=%04hx,count=%u,length=%u}",
+        SERVER_LOG( LOG_ALWAYS, "%s{type=HID,device=%04x,param=%04x,page=%04hx,usage=%04hx,count=%u,length=%u}",
                  prefix, rawinput->hid.device, rawinput->hid.param, rawinput->hid.usage_page,
                  rawinput->hid.usage, rawinput->hid.count, rawinput->hid.length );
         break;
     default:
-        fprintf( stderr, "%s{type=%04x}", prefix, rawinput->type );
+        SERVER_LOG( LOG_ALWAYS, "%s{type=%04x}", prefix, rawinput->type );
         break;
     }
 }
@@ -428,20 +428,20 @@ static void dump_hw_input( const char *prefix, const hw_input_t *input )
     switch (input->type)
     {
     case INPUT_MOUSE:
-        fprintf( stderr, "%s{type=MOUSE,x=%d,y=%d,data=%08x,flags=%08x,time=%u",
+        SERVER_LOG( LOG_ALWAYS, "%s{type=MOUSE,x=%d,y=%d,data=%08x,flags=%08x,time=%u",
                  prefix, input->mouse.x, input->mouse.y, input->mouse.data, input->mouse.flags,
                  input->mouse.time );
         dump_uint64( ",info=", &input->mouse.info );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         break;
     case INPUT_KEYBOARD:
-        fprintf( stderr, "%s{type=KEYBOARD,vkey=%04hx,scan=%04hx,flags=%08x,time=%u",
+        SERVER_LOG( LOG_ALWAYS, "%s{type=KEYBOARD,vkey=%04hx,scan=%04hx,flags=%08x,time=%u",
                  prefix, input->kbd.vkey, input->kbd.scan, input->kbd.flags, input->kbd.time );
         dump_uint64( ",info=", &input->kbd.info );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         break;
     case INPUT_HARDWARE:
-        fprintf( stderr, "%s{type=HARDWARE,msg=%04x", prefix, input->hw.msg );
+        SERVER_LOG( LOG_ALWAYS, "%s{type=HARDWARE,msg=%04x", prefix, input->hw.msg );
         dump_uint64( ",lparam=", &input->hw.lparam );
         switch (input->hw.msg)
         {
@@ -449,22 +449,22 @@ static void dump_hw_input( const char *prefix, const hw_input_t *input )
         case WM_INPUT_DEVICE_CHANGE:
             dump_rawinput( ",rawinput=", &input->hw.rawinput );
         }
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         break;
     default:
-        fprintf( stderr, "%s{type=%04x}", prefix, input->type );
+        SERVER_LOG( LOG_ALWAYS, "%s{type=%04x}", prefix, input->type );
         break;
     }
 }
 
 static void dump_luid( const char *prefix, const luid_t *luid )
 {
-    fprintf( stderr, "%s%d.%u", prefix, luid->high_part, luid->low_part );
+    SERVER_LOG( LOG_ALWAYS, "%s%d.%u", prefix, luid->high_part, luid->low_part );
 }
 
 static void dump_generic_map( const char *prefix, const generic_map_t *map )
 {
-    fprintf( stderr, "%s{r=%08x,w=%08x,x=%08x,a=%08x}",
+    SERVER_LOG( LOG_ALWAYS, "%s{r=%08x,w=%08x,x=%08x,a=%08x}",
              prefix, map->read, map->write, map->exec, map->all );
 }
 
@@ -473,13 +473,13 @@ static void dump_varargs_ints( const char *prefix, data_size_t size )
     const int *data = cur_data;
     data_size_t len = size / sizeof(*data);
 
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     while (len > 0)
     {
-        fprintf( stderr, "%d", *data++ );
-        if (--len) fputc( ',', stderr );
+        SERVER_LOG( LOG_ALWAYS, "%d", *data++ );
+        if (--len) SERVER_LOG( LOG_ALWAYS, "," );
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
     remove_data( size );
 }
 
@@ -496,13 +496,13 @@ static void dump_varargs_uints64( const char *prefix, data_size_t size )
     const unsigned __int64 *data = cur_data;
     data_size_t len = size / sizeof(*data);
 
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     while (len > 0)
     {
         dump_uint64( "", data++ );
-        if (--len) fputc( ',', stderr );
+        if (--len) SERVER_LOG( LOG_ALWAYS, "," );
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
     remove_data( size );
 }
 
@@ -511,13 +511,13 @@ static void dump_varargs_ushorts( const char *prefix, data_size_t size )
     const unsigned short *data = cur_data;
     data_size_t len = size / sizeof(*data);
 
-    fprintf( stderr, "%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     while (len > 0)
     {
-        fprintf( stderr, "%04x", *data++ );
-        if (--len) fputc( ',', stderr );
+        SERVER_LOG( LOG_ALWAYS, "%04x", *data++ );
+        if (--len) SERVER_LOG( LOG_ALWAYS, "," );
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
     remove_data( size );
 }
 
@@ -539,41 +539,41 @@ static void dump_varargs_select_op( const char *prefix, data_size_t size )
 
     if (!size)
     {
-        fprintf( stderr, "%s{}", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{}", prefix );
         return;
     }
     memset( &data, 0, sizeof(data) );
     memcpy( &data, cur_data, min( size, sizeof(data) ));
 
-    fprintf( stderr, "%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     switch (data.op)
     {
     case SELECT_NONE:
-        fprintf( stderr, "NONE" );
+        SERVER_LOG( LOG_ALWAYS, "NONE" );
         break;
     case SELECT_WAIT:
     case SELECT_WAIT_ALL:
-        fprintf( stderr, "%s", data.op == SELECT_WAIT ? "WAIT" : "WAIT_ALL" );
+        SERVER_LOG( LOG_ALWAYS, "%s", data.op == SELECT_WAIT ? "WAIT" : "WAIT_ALL" );
         if (size > offsetof( select_op_t, wait.handles ))
             dump_handles( ",handles=", data.wait.handles,
                           min( size, sizeof(data.wait) ) - offsetof( select_op_t, wait.handles ));
         break;
     case SELECT_SIGNAL_AND_WAIT:
-        fprintf( stderr, "SIGNAL_AND_WAIT,signal=%04x,wait=%04x",
+        SERVER_LOG( LOG_ALWAYS, "SIGNAL_AND_WAIT,signal=%04x,wait=%04x",
                  data.signal_and_wait.signal, data.signal_and_wait.wait );
         break;
     case SELECT_KEYED_EVENT_WAIT:
     case SELECT_KEYED_EVENT_RELEASE:
-        fprintf( stderr, "KEYED_EVENT_%s,handle=%04x",
+        SERVER_LOG( LOG_ALWAYS, "KEYED_EVENT_%s,handle=%04x",
                  data.op == SELECT_KEYED_EVENT_WAIT ? "WAIT" : "RELEASE",
                  data.keyed_event.handle );
         dump_uint64( ",key=", &data.keyed_event.key );
         break;
     default:
-        fprintf( stderr, "op=%u", data.op );
+        SERVER_LOG( LOG_ALWAYS, "op=%u", data.op );
         break;
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
     remove_data( size );
 }
 
@@ -582,13 +582,13 @@ static void dump_varargs_user_handles( const char *prefix, data_size_t size )
     const user_handle_t *data = cur_data;
     data_size_t len = size / sizeof(*data);
 
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     while (len > 0)
     {
-        fprintf( stderr, "%08x", *data++ );
-        if (--len) fputc( ',', stderr );
+        SERVER_LOG( LOG_ALWAYS, "%08x", *data++ );
+        if (--len) SERVER_LOG( LOG_ALWAYS, "," );
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
     remove_data( size );
 }
 
@@ -597,28 +597,28 @@ static void dump_varargs_bytes( const char *prefix, data_size_t size )
     const unsigned char *data = cur_data;
     data_size_t len = min( 1024, size );
 
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     while (len > 0)
     {
-        fprintf( stderr, "%02x", *data++ );
-        if (--len) fputc( ',', stderr );
+        SERVER_LOG( LOG_ALWAYS, "%02x", *data++ );
+        if (--len) SERVER_LOG( LOG_ALWAYS, "," );
     }
-    if (size > 1024) fprintf( stderr, "...(total %u)", size );
-    fputc( '}', stderr );
+    if (size > 1024) SERVER_LOG( LOG_ALWAYS, "...(total %u)", size );
+    SERVER_LOG( LOG_ALWAYS, "}" );
     remove_data( size );
 }
 
 static void dump_varargs_string( const char *prefix, data_size_t size )
 {
-    fprintf( stderr, "%s\"%.*s\"", prefix, (int)size, (const char *)cur_data );
+    SERVER_LOG( LOG_ALWAYS, "%s\"%.*s\"", prefix, (int)size, (const char *)cur_data );
     remove_data( size );
 }
 
 static void dump_varargs_unicode_str( const char *prefix, data_size_t size )
 {
-    fprintf( stderr, "%sL\"", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%sL\"", prefix );
     dump_strW( cur_data, size, stderr, "\"\"" );
-    fputc( '\"', stderr );
+    SERVER_LOG( LOG_ALWAYS, "\"" );
     remove_data( size );
 }
 
@@ -630,7 +630,7 @@ static void dump_varargs_context( const char *prefix, data_size_t size )
 
     if (!size)
     {
-        fprintf( stderr, "%s{}", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{}", prefix );
         return;
     }
     size = min( size, sizeof(ctx) );
@@ -640,36 +640,36 @@ static void dump_varargs_context( const char *prefix, data_size_t size )
     switch (ctx.machine)
     {
     case IMAGE_FILE_MACHINE_I386:
-        fprintf( stderr, "%s{machine=i386", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{machine=i386", prefix );
         if (ctx.flags & SERVER_CTX_CONTROL)
-            fprintf( stderr, ",eip=%08x,esp=%08x,ebp=%08x,eflags=%08x,cs=%04x,ss=%04x",
+            SERVER_LOG( LOG_ALWAYS, ",eip=%08x,esp=%08x,ebp=%08x,eflags=%08x,cs=%04x,ss=%04x",
                      ctx.ctl.i386_regs.eip, ctx.ctl.i386_regs.esp, ctx.ctl.i386_regs.ebp,
                      ctx.ctl.i386_regs.eflags, ctx.ctl.i386_regs.cs, ctx.ctl.i386_regs.ss );
         if (ctx.flags & SERVER_CTX_SEGMENTS)
-            fprintf( stderr, ",ds=%04x,es=%04x,fs=%04x,gs=%04x",
+            SERVER_LOG( LOG_ALWAYS, ",ds=%04x,es=%04x,fs=%04x,gs=%04x",
                      ctx.seg.i386_regs.ds, ctx.seg.i386_regs.es,
                      ctx.seg.i386_regs.fs, ctx.seg.i386_regs.gs );
         if (ctx.flags & SERVER_CTX_INTEGER)
-            fprintf( stderr, ",eax=%08x,ebx=%08x,ecx=%08x,edx=%08x,esi=%08x,edi=%08x",
+            SERVER_LOG( LOG_ALWAYS, ",eax=%08x,ebx=%08x,ecx=%08x,edx=%08x,esi=%08x,edi=%08x",
                      ctx.integer.i386_regs.eax, ctx.integer.i386_regs.ebx, ctx.integer.i386_regs.ecx,
                      ctx.integer.i386_regs.edx, ctx.integer.i386_regs.esi, ctx.integer.i386_regs.edi );
         if (ctx.flags & SERVER_CTX_DEBUG_REGISTERS)
-            fprintf( stderr, ",dr0=%08x,dr1=%08x,dr2=%08x,dr3=%08x,dr6=%08x,dr7=%08x",
+            SERVER_LOG( LOG_ALWAYS, ",dr0=%08x,dr1=%08x,dr2=%08x,dr3=%08x,dr6=%08x,dr7=%08x",
                      ctx.debug.i386_regs.dr0, ctx.debug.i386_regs.dr1, ctx.debug.i386_regs.dr2,
                      ctx.debug.i386_regs.dr3, ctx.debug.i386_regs.dr6, ctx.debug.i386_regs.dr7 );
         if (ctx.flags & SERVER_CTX_FLOATING_POINT)
         {
-            fprintf( stderr, ",fp.ctrl=%08x,fp.status=%08x,fp.tag=%08x,fp.err_off=%08x,fp.err_sel=%08x",
+            SERVER_LOG( LOG_ALWAYS, ",fp.ctrl=%08x,fp.status=%08x,fp.tag=%08x,fp.err_off=%08x,fp.err_sel=%08x",
                      ctx.fp.i386_regs.ctrl, ctx.fp.i386_regs.status, ctx.fp.i386_regs.tag,
                      ctx.fp.i386_regs.err_off, ctx.fp.i386_regs.err_sel );
-            fprintf( stderr, ",fp.data_off=%08x,fp.data_sel=%08x,fp.cr0npx=%08x",
+            SERVER_LOG( LOG_ALWAYS, ",fp.data_off=%08x,fp.data_sel=%08x,fp.cr0npx=%08x",
                      ctx.fp.i386_regs.data_off, ctx.fp.i386_regs.data_sel, ctx.fp.i386_regs.cr0npx );
             for (i = 0; i < 8; i++)
             {
                 unsigned __int64 reg[2];
                 memset( reg, 0, sizeof(reg) );
                 memcpy( reg, &ctx.fp.i386_regs.regs[10 * i], 10 );
-                fprintf( stderr, ",fp.reg%u=", i );
+                SERVER_LOG( LOG_ALWAYS, ",fp.reg%u=", i );
                 dump_uint128( "", reg );
             }
         }
@@ -679,18 +679,18 @@ static void dump_varargs_context( const char *prefix, data_size_t size )
         if (ctx.flags & SERVER_CTX_YMM_REGISTERS)
             for (i = 0; i < 16; i++)
             {
-                fprintf( stderr, ",ymm%u=", i );
+                SERVER_LOG( LOG_ALWAYS, ",ymm%u=", i );
                 dump_uint128( "", (const unsigned __int64 *)&ctx.ymm.regs.ymm_high[i] );
             }
         break;
     case IMAGE_FILE_MACHINE_AMD64:
-        fprintf( stderr, "%s{machine=x86_64", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{machine=x86_64", prefix );
         if (ctx.flags & SERVER_CTX_CONTROL)
         {
             dump_uint64( ",rip=", &ctx.ctl.x86_64_regs.rip );
             dump_uint64( ",rbp=", &ctx.ctl.x86_64_regs.rbp );
             dump_uint64( ",rsp=", &ctx.ctl.x86_64_regs.rsp );
-            fprintf( stderr, ",cs=%04x,ss=%04x,flags=%08x",
+            SERVER_LOG( LOG_ALWAYS, ",cs=%04x,ss=%04x,flags=%08x",
                      ctx.ctl.x86_64_regs.cs, ctx.ctl.x86_64_regs.ss, ctx.ctl.x86_64_regs.flags );
         }
         if (ctx.flags & SERVER_CTX_INTEGER)
@@ -711,7 +711,7 @@ static void dump_varargs_context( const char *prefix, data_size_t size )
             dump_uint64( ",r15=", &ctx.integer.x86_64_regs.r15 );
         }
         if (ctx.flags & SERVER_CTX_SEGMENTS)
-            fprintf( stderr, ",ds=%04x,es=%04x,fs=%04x,gs=%04x",
+            SERVER_LOG( LOG_ALWAYS, ",ds=%04x,es=%04x,fs=%04x,gs=%04x",
                      ctx.seg.x86_64_regs.ds, ctx.seg.x86_64_regs.es,
                      ctx.seg.x86_64_regs.fs, ctx.seg.x86_64_regs.gs );
         if (ctx.flags & SERVER_CTX_DEBUG_REGISTERS)
@@ -726,44 +726,44 @@ static void dump_varargs_context( const char *prefix, data_size_t size )
         if (ctx.flags & SERVER_CTX_FLOATING_POINT)
             for (i = 0; i < 32; i++)
             {
-                fprintf( stderr, ",fp%u=", i );
+                SERVER_LOG( LOG_ALWAYS, ",fp%u=", i );
                 dump_uint128( "", (const unsigned __int64 *)&ctx.fp.x86_64_regs.fpregs[i] );
             }
         if (ctx.flags & SERVER_CTX_YMM_REGISTERS)
             for (i = 0; i < 16; i++)
             {
-                fprintf( stderr, ",ymm%u=", i );
+                SERVER_LOG( LOG_ALWAYS, ",ymm%u=", i );
                 dump_uint128( "", (const unsigned __int64 *)&ctx.ymm.regs.ymm_high[i] );
             }
         break;
     case IMAGE_FILE_MACHINE_ARMNT:
-        fprintf( stderr, "%s{machine=arm", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{machine=arm", prefix );
         if (ctx.flags & SERVER_CTX_CONTROL)
-            fprintf( stderr, ",sp=%08x,lr=%08x,pc=%08x,cpsr=%08x",
+            SERVER_LOG( LOG_ALWAYS, ",sp=%08x,lr=%08x,pc=%08x,cpsr=%08x",
                      ctx.ctl.arm_regs.sp, ctx.ctl.arm_regs.lr,
                      ctx.ctl.arm_regs.pc, ctx.ctl.arm_regs.cpsr );
         if (ctx.flags & SERVER_CTX_INTEGER)
-            for (i = 0; i < 13; i++) fprintf( stderr, ",r%u=%08x", i, ctx.integer.arm_regs.r[i] );
+            for (i = 0; i < 13; i++) SERVER_LOG( LOG_ALWAYS, ",r%u=%08x", i, ctx.integer.arm_regs.r[i] );
         if (ctx.flags & SERVER_CTX_DEBUG_REGISTERS)
         {
             for (i = 0; i < 8; i++)
-                fprintf( stderr, ",bcr%u=%08x,bvr%u=%08x",
+                SERVER_LOG( LOG_ALWAYS, ",bcr%u=%08x,bvr%u=%08x",
                          i, ctx.debug.arm_regs.bcr[i], i, ctx.debug.arm_regs.bvr[i] );
-            fprintf( stderr, ",wcr0=%08x,wvr0=%08x",
+            SERVER_LOG( LOG_ALWAYS, ",wcr0=%08x,wvr0=%08x",
                      ctx.debug.arm_regs.wcr[0], ctx.debug.arm_regs.wvr[0] );
         }
         if (ctx.flags & SERVER_CTX_FLOATING_POINT)
         {
             for (i = 0; i < 32; i++)
             {
-                fprintf( stderr, ",d%u=", i );
+                SERVER_LOG( LOG_ALWAYS, ",d%u=", i );
                 dump_uint64( "", &ctx.fp.arm_regs.d[i] );
             }
-            fprintf( stderr, ",fpscr=%08x", ctx.fp.arm_regs.fpscr );
+            SERVER_LOG( LOG_ALWAYS, ",fpscr=%08x", ctx.fp.arm_regs.fpscr );
         }
         break;
     case IMAGE_FILE_MACHINE_ARM64:
-        fprintf( stderr, "%s{machine=arm64", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{machine=arm64", prefix );
         if (ctx.flags & SERVER_CTX_CONTROL)
         {
             dump_uint64( ",sp=", &ctx.ctl.arm64_regs.sp );
@@ -774,7 +774,7 @@ static void dump_varargs_context( const char *prefix, data_size_t size )
         {
             for (i = 0; i < 31; i++)
             {
-                fprintf( stderr, ",x%u=", i );
+                SERVER_LOG( LOG_ALWAYS, ",x%u=", i );
                 dump_uint64( "", &ctx.integer.arm64_regs.x[i] );
             }
         }
@@ -782,12 +782,12 @@ static void dump_varargs_context( const char *prefix, data_size_t size )
         {
             for (i = 0; i < 8; i++)
             {
-                fprintf( stderr, ",bcr%u=%08x,bvr%u=", i, ctx.debug.arm64_regs.bcr[i], i );
+                SERVER_LOG( LOG_ALWAYS, ",bcr%u=%08x,bvr%u=", i, ctx.debug.arm64_regs.bcr[i], i );
                 dump_uint64( "", &ctx.debug.arm64_regs.bvr[i] );
             }
             for (i = 0; i < 2; i++)
             {
-                fprintf( stderr, ",wcr%u=%08x,wvr%u=", i, ctx.debug.arm64_regs.wcr[i], i );
+                SERVER_LOG( LOG_ALWAYS, ",wcr%u=%08x,wvr%u=", i, ctx.debug.arm64_regs.wcr[i], i );
                 dump_uint64( "", &ctx.debug.arm64_regs.wvr[i] );
             }
         }
@@ -795,18 +795,18 @@ static void dump_varargs_context( const char *prefix, data_size_t size )
         {
             for (i = 0; i < 32; i++)
             {
-                fprintf( stderr, ",q%u=", i );
+                SERVER_LOG( LOG_ALWAYS, ",q%u=", i );
                 dump_uint64( "", &ctx.fp.arm64_regs.q[i].high );
                 dump_uint64( "", &ctx.fp.arm64_regs.q[i].low );
             }
-            fprintf( stderr, ",fpcr=%08x,fpsr=%08x", ctx.fp.arm64_regs.fpcr, ctx.fp.arm64_regs.fpsr );
+            SERVER_LOG( LOG_ALWAYS, ",fpcr=%08x,fpsr=%08x", ctx.fp.arm64_regs.fpcr, ctx.fp.arm64_regs.fpsr );
         }
         break;
     default:
-        fprintf( stderr, "%s{machine=%04x", prefix, ctx.machine );
+        SERVER_LOG( LOG_ALWAYS, "%s{machine=%04x", prefix, ctx.machine );
         break;
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
     remove_data( size );
 }
 
@@ -814,14 +814,14 @@ static void dump_varargs_contexts( const char *prefix, data_size_t size )
 {
     if (!size)
     {
-        fprintf( stderr, "%s{}", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{}", prefix );
         return;
     }
-    fprintf( stderr, "%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     while (cur_size)
     {
         dump_varargs_context( "", cur_size );
-        fputc( cur_size ? ',' : '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, cur_size ? "," : "}" );
     }
 }
 
@@ -832,7 +832,7 @@ static void dump_varargs_debug_event( const char *prefix, data_size_t size )
 
     if (!size)
     {
-        fprintf( stderr, "%s{}", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{}", prefix );
         return;
     }
     size = min( size, sizeof(event) );
@@ -842,65 +842,65 @@ static void dump_varargs_debug_event( const char *prefix, data_size_t size )
     switch(event.code)
     {
     case DbgIdle:
-        fprintf( stderr, "%s{idle}", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{idle}", prefix );
         break;
     case DbgReplyPending:
-        fprintf( stderr, "%s{pending}", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{pending}", prefix );
         break;
     case DbgCreateThreadStateChange:
-        fprintf( stderr, "%s{create_thread,thread=%04x", prefix, event.create_thread.handle );
+        SERVER_LOG( LOG_ALWAYS, "%s{create_thread,thread=%04x", prefix, event.create_thread.handle );
         dump_uint64( ",start=", &event.create_thread.start );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         break;
     case DbgCreateProcessStateChange:
-        fprintf( stderr, "%s{create_process,file=%04x,process=%04x,thread=%04x", prefix,
+        SERVER_LOG( LOG_ALWAYS, "%s{create_process,file=%04x,process=%04x,thread=%04x", prefix,
                  event.create_process.file, event.create_process.process,
                  event.create_process.thread );
         dump_uint64( ",base=", &event.create_process.base );
-        fprintf( stderr, ",offset=%d,size=%d",
+        SERVER_LOG( LOG_ALWAYS, ",offset=%d,size=%d",
                  event.create_process.dbg_offset, event.create_process.dbg_size );
         dump_uint64( ",start=", &event.create_process.start );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         break;
     case DbgExitThreadStateChange:
-        fprintf( stderr, "%s{exit_thread,code=%d}", prefix, event.exit.exit_code );
+        SERVER_LOG( LOG_ALWAYS, "%s{exit_thread,code=%d}", prefix, event.exit.exit_code );
         break;
     case DbgExitProcessStateChange:
-        fprintf( stderr, "%s{exit_process,code=%d}", prefix, event.exit.exit_code );
+        SERVER_LOG( LOG_ALWAYS, "%s{exit_process,code=%d}", prefix, event.exit.exit_code );
         break;
     case DbgExceptionStateChange:
     case DbgBreakpointStateChange:
     case DbgSingleStepStateChange:
-        fprintf( stderr, "%s{%s,first=%d,exc_code=%08x,flags=%08x", prefix,
+        SERVER_LOG( LOG_ALWAYS, "%s{%s,first=%d,exc_code=%08x,flags=%08x", prefix,
                  event.code == DbgBreakpointStateChange ? "breakpoint" :
                  event.code == DbgSingleStepStateChange ? "singlestep" : "exception",
                  event.exception.first, event.exception.exc_code, event.exception.flags );
         dump_uint64( ",record=", &event.exception.record );
         dump_uint64( ",address=", &event.exception.address );
-        fprintf( stderr, ",params={" );
+        SERVER_LOG( LOG_ALWAYS, ",params={" );
         event.exception.nb_params = min( event.exception.nb_params, EXCEPTION_MAXIMUM_PARAMETERS );
         for (i = 0; i < event.exception.nb_params; i++)
         {
             dump_uint64( "", &event.exception.params[i] );
-            if (i < event.exception.nb_params) fputc( ',', stderr );
+            if (i < event.exception.nb_params) SERVER_LOG( LOG_ALWAYS, "," );
         }
-        fprintf( stderr, "}}" );
+        SERVER_LOG( LOG_ALWAYS, "}}" );
         break;
     case DbgLoadDllStateChange:
-        fprintf( stderr, "%s{load_dll,file=%04x", prefix, event.load_dll.handle );
+        SERVER_LOG( LOG_ALWAYS, "%s{load_dll,file=%04x", prefix, event.load_dll.handle );
         dump_uint64( ",base=", &event.load_dll.base );
-        fprintf( stderr, ",offset=%d,size=%d",
+        SERVER_LOG( LOG_ALWAYS, ",offset=%d,size=%d",
                  event.load_dll.dbg_offset, event.load_dll.dbg_size );
         dump_uint64( ",name=", &event.load_dll.name );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         break;
     case DbgUnloadDllStateChange:
-        fprintf( stderr, "%s{unload_dll", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{unload_dll", prefix );
         dump_uint64( ",base=", &event.unload_dll.base );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         break;
     default:
-        fprintf( stderr, "%s{code=??? (%d)}", prefix, event.code );
+        SERVER_LOG( LOG_ALWAYS, "%s{code=??? (%d)}", prefix, event.code );
         break;
     }
     remove_data( size );
@@ -924,7 +924,7 @@ static void dump_varargs_startup_info( const char *prefix, data_size_t size )
     memset( &info, 0, sizeof(info) );
     memcpy( &info, cur_data, min( size, sizeof(info) ));
 
-    fprintf( stderr,
+    SERVER_LOG( LOG_ALWAYS,
              "%s{debug_flags=%x,console_flags=%x,console=%04x,hstdin=%04x,hstdout=%04x,hstderr=%04x,"
              "x=%u,y=%u,xsize=%u,ysize=%u,xchars=%u,ychars=%u,attribute=%02x,flags=%x,show=%u",
              prefix, info.debug_flags, info.console_flags, info.console,
@@ -938,7 +938,7 @@ static void dump_varargs_startup_info( const char *prefix, data_size_t size )
     pos = dump_inline_unicode_string( "\",desktop=L\"", pos, info.desktop_len, size );
     pos = dump_inline_unicode_string( "\",shellinfo=L\"", pos, info.shellinfo_len, size );
     pos = dump_inline_unicode_string( "\",runtime=L\"", pos, info.runtime_len, size );
-    fprintf( stderr, "\"}" );
+    SERVER_LOG( LOG_ALWAYS, "\"}" );
     remove_data( size );
 }
 
@@ -947,13 +947,13 @@ static void dump_varargs_rectangles( const char *prefix, data_size_t size )
     const rectangle_t *rect = cur_data;
     data_size_t len = size / sizeof(*rect);
 
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     while (len > 0)
     {
         dump_rectangle( "", rect++ );
-        if (--len) fputc( ',', stderr );
+        if (--len) SERVER_LOG( LOG_ALWAYS, "," );
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
     remove_data( size );
 }
 
@@ -962,16 +962,16 @@ static void dump_varargs_cursor_positions( const char *prefix, data_size_t size 
     const cursor_pos_t *pos = cur_data;
     data_size_t len = size / sizeof(*pos);
 
-    fprintf( stderr, "%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     while (len > 0)
     {
-        fprintf( stderr, "{x=%d,y=%d,time=%u", pos->x, pos->y, pos->time );
+        SERVER_LOG( LOG_ALWAYS, "{x=%d,y=%d,time=%u", pos->x, pos->y, pos->time );
         dump_uint64( ",info=", &pos->info );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         pos++;
-        if (--len) fputc( ',', stderr );
+        if (--len) SERVER_LOG( LOG_ALWAYS, "," );
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
     remove_data( size );
 }
 
@@ -986,16 +986,16 @@ static void dump_varargs_properties( const char *prefix, data_size_t size )
     const property_data_t *prop = cur_data;
     data_size_t len = size / sizeof(*prop);
 
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     while (len > 0)
     {
-        fprintf( stderr, "{atom=%04x,str=%d", prop->atom, prop->string );
+        SERVER_LOG( LOG_ALWAYS, "{atom=%04x,str=%d", prop->atom, prop->string );
         dump_uint64( ",data=", &prop->data );
-        fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "}" );
         prop++;
-        if (--len) fputc( ',', stderr );
+        if (--len) SERVER_LOG( LOG_ALWAYS, "," );
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
     remove_data( size );
 }
 
@@ -1004,15 +1004,15 @@ static void dump_varargs_LUID_AND_ATTRIBUTES( const char *prefix, data_size_t si
     const LUID_AND_ATTRIBUTES *lat = cur_data;
     data_size_t len = size / sizeof(*lat);
 
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     while (len > 0)
     {
-        fprintf( stderr, "{luid=%08x%08x,attr=%x}",
+        SERVER_LOG( LOG_ALWAYS, "{luid=%08x%08x,attr=%x}",
                  lat->Luid.HighPart, lat->Luid.LowPart, lat->Attributes );
         lat++;
-        if (--len) fputc( ',', stderr );
+        if (--len) SERVER_LOG( LOG_ALWAYS, "," );
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
     remove_data( size );
 }
 
@@ -1024,19 +1024,19 @@ static void dump_inline_sid( const char *prefix, const SID *sid, data_size_t siz
     if ((FIELD_OFFSET(SID, SubAuthority[0]) > size) ||
         (FIELD_OFFSET(SID, SubAuthority[sid->SubAuthorityCount]) > size))
     {
-        fprintf( stderr, "<invalid sid>" );
+        SERVER_LOG( LOG_ALWAYS, "<invalid sid>" );
         return;
     }
 
-    fprintf( stderr,"%s{", prefix );
-    fprintf( stderr, "S-%u-%u", sid->Revision, MAKELONG(
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "S-%u-%u", sid->Revision, MAKELONG(
         MAKEWORD( sid->IdentifierAuthority.Value[5],
                   sid->IdentifierAuthority.Value[4] ),
         MAKEWORD( sid->IdentifierAuthority.Value[3],
                   sid->IdentifierAuthority.Value[2] ) ) );
     for (i = 0; i < sid->SubAuthorityCount; i++)
-        fprintf( stderr, "-%u", sid->SubAuthority[i] );
-    fputc( '}', stderr );
+        SERVER_LOG( LOG_ALWAYS, "-%u", sid->SubAuthority[i] );
+    SERVER_LOG( LOG_ALWAYS, "}" );
 }
 
 static void dump_varargs_SID( const char *prefix, data_size_t size )
@@ -1051,12 +1051,12 @@ static void dump_inline_acl( const char *prefix, const ACL *acl, data_size_t siz
     const ACE_HEADER *ace;
     ULONG i;
 
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     if (size)
     {
         if (size < sizeof(ACL))
         {
-            fprintf( stderr, "<invalid acl>}" );
+            SERVER_LOG( LOG_ALWAYS, "<invalid acl>}" );
             return;
         }
         size -= sizeof(ACL);
@@ -1068,52 +1068,52 @@ static void dump_inline_acl( const char *prefix, const ACL *acl, data_size_t siz
 
             if (size < sizeof(ACE_HEADER) || size < ace->AceSize) break;
             size -= ace->AceSize;
-            if (i != 0) fputc( ',', stderr );
-            fprintf( stderr, "{AceType=" );
+            if (i != 0) SERVER_LOG( LOG_ALWAYS, "," );
+            SERVER_LOG( LOG_ALWAYS, "{AceType=" );
             switch (ace->AceType)
             {
             case ACCESS_DENIED_ACE_TYPE:
                 sid = (const SID *)&((const ACCESS_DENIED_ACE *)ace)->SidStart;
                 sid_size = ace->AceSize - FIELD_OFFSET(ACCESS_DENIED_ACE, SidStart);
-                fprintf( stderr, "ACCESS_DENIED_ACE_TYPE,Mask=%x",
+                SERVER_LOG( LOG_ALWAYS, "ACCESS_DENIED_ACE_TYPE,Mask=%x",
                          ((const ACCESS_DENIED_ACE *)ace)->Mask );
                 break;
             case ACCESS_ALLOWED_ACE_TYPE:
                 sid = (const SID *)&((const ACCESS_ALLOWED_ACE *)ace)->SidStart;
                 sid_size = ace->AceSize - FIELD_OFFSET(ACCESS_ALLOWED_ACE, SidStart);
-                fprintf( stderr, "ACCESS_ALLOWED_ACE_TYPE,Mask=%x",
+                SERVER_LOG( LOG_ALWAYS, "ACCESS_ALLOWED_ACE_TYPE,Mask=%x",
                          ((const ACCESS_ALLOWED_ACE *)ace)->Mask );
                 break;
             case SYSTEM_AUDIT_ACE_TYPE:
                 sid = (const SID *)&((const SYSTEM_AUDIT_ACE *)ace)->SidStart;
                 sid_size = ace->AceSize - FIELD_OFFSET(SYSTEM_AUDIT_ACE, SidStart);
-                fprintf( stderr, "SYSTEM_AUDIT_ACE_TYPE,Mask=%x",
+                SERVER_LOG( LOG_ALWAYS, "SYSTEM_AUDIT_ACE_TYPE,Mask=%x",
                          ((const SYSTEM_AUDIT_ACE *)ace)->Mask );
                 break;
             case SYSTEM_ALARM_ACE_TYPE:
                 sid = (const SID *)&((const SYSTEM_ALARM_ACE *)ace)->SidStart;
                 sid_size = ace->AceSize - FIELD_OFFSET(SYSTEM_ALARM_ACE, SidStart);
-                fprintf( stderr, "SYSTEM_ALARM_ACE_TYPE,Mask=%x",
+                SERVER_LOG( LOG_ALWAYS, "SYSTEM_ALARM_ACE_TYPE,Mask=%x",
                          ((const SYSTEM_ALARM_ACE *)ace)->Mask );
                 break;
             case SYSTEM_MANDATORY_LABEL_ACE_TYPE:
                 sid = (const SID *)&((const SYSTEM_MANDATORY_LABEL_ACE *)ace)->SidStart;
                 sid_size = ace->AceSize - FIELD_OFFSET(SYSTEM_MANDATORY_LABEL_ACE, SidStart);
-                fprintf( stderr, "SYSTEM_MANDATORY_LABEL_ACE_TYPE,Mask=%x",
+                SERVER_LOG( LOG_ALWAYS, "SYSTEM_MANDATORY_LABEL_ACE_TYPE,Mask=%x",
                          ((const SYSTEM_MANDATORY_LABEL_ACE *)ace)->Mask );
                 break;
             default:
-                fprintf( stderr, "unknown<%d>", ace->AceType );
+                SERVER_LOG( LOG_ALWAYS, "unknown<%d>", ace->AceType );
                 break;
             }
-            fprintf( stderr, ",AceFlags=%x", ace->AceFlags );
+            SERVER_LOG( LOG_ALWAYS, ",AceFlags=%x", ace->AceFlags );
             if (sid)
                 dump_inline_sid( ",Sid=", sid, sid_size );
             ace = (const ACE_HEADER *)((const char *)ace + ace->AceSize);
-            fputc( '}', stderr );
+            SERVER_LOG( LOG_ALWAYS, "}" );
         }
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
 }
 
 static void dump_varargs_ACL( const char *prefix, data_size_t size )
@@ -1125,24 +1125,24 @@ static void dump_varargs_ACL( const char *prefix, data_size_t size )
 
 static void dump_inline_security_descriptor( const char *prefix, const struct security_descriptor *sd, data_size_t size )
 {
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     if (size >= sizeof(struct security_descriptor))
     {
         size_t offset = sizeof(struct security_descriptor);
-        fprintf( stderr, "control=%08x", sd->control );
+        SERVER_LOG( LOG_ALWAYS, "control=%08x", sd->control );
         if ((sd->owner_len > FIELD_OFFSET(SID, SubAuthority[255])) || (offset + sd->owner_len > size))
             return;
         if (sd->owner_len)
             dump_inline_sid( ",owner=", (const SID *)((const char *)sd + offset), sd->owner_len );
         else
-            fprintf( stderr, ",owner=<not present>" );
+            SERVER_LOG( LOG_ALWAYS, ",owner=<not present>" );
         offset += sd->owner_len;
         if ((sd->group_len > FIELD_OFFSET(SID, SubAuthority[255])) || (offset + sd->group_len > size))
             return;
         if (sd->group_len)
             dump_inline_sid( ",group=", (const SID *)((const char *)sd + offset), sd->group_len );
         else
-            fprintf( stderr, ",group=<not present>" );
+            SERVER_LOG( LOG_ALWAYS, ",group=<not present>" );
         offset += sd->group_len;
         if ((sd->sacl_len >= MAX_ACL_LEN) || (offset + sd->sacl_len > size))
             return;
@@ -1153,7 +1153,7 @@ static void dump_inline_security_descriptor( const char *prefix, const struct se
         dump_inline_acl( ",dacl=", (const ACL *)((const char *)sd + offset), sd->dacl_len );
         offset += sd->dacl_len;
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
 }
 
 static void dump_varargs_security_descriptor( const char *prefix, data_size_t size )
@@ -1167,11 +1167,11 @@ static void dump_varargs_token_groups( const char *prefix, data_size_t size )
 {
     const struct token_groups *tg = cur_data;
 
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     if (size >= sizeof(struct token_groups))
     {
         size_t offset = sizeof(*tg);
-        fprintf( stderr, "count=%08x,", tg->count );
+        SERVER_LOG( LOG_ALWAYS, "count=%08x,", tg->count );
         if (tg->count * sizeof(unsigned int) <= size)
         {
             unsigned int i;
@@ -1179,25 +1179,25 @@ static void dump_varargs_token_groups( const char *prefix, data_size_t size )
 
             offset += tg->count * sizeof(unsigned int);
 
-            fputc( '[', stderr );
+            SERVER_LOG( LOG_ALWAYS, "[" );
             for (i = 0; i < tg->count; i++)
             {
                 const SID *sid = (const SID *)((const char *)cur_data + offset);
                 if (i != 0)
-                    fputc( ',', stderr );
-                fputc( '{', stderr );
-                fprintf( stderr, "attributes=%08x", attr[i] );
+                    SERVER_LOG( LOG_ALWAYS, "," );
+                SERVER_LOG( LOG_ALWAYS, "{" );
+                SERVER_LOG( LOG_ALWAYS, "attributes=%08x", attr[i] );
                 dump_inline_sid( ",sid=", sid, size - offset );
                 if ((offset + FIELD_OFFSET(SID, SubAuthority[0]) > size) ||
                     (offset + FIELD_OFFSET(SID, SubAuthority[sid->SubAuthorityCount]) > size))
                     break;
                 offset += FIELD_OFFSET(SID, SubAuthority[sid->SubAuthorityCount]);
-                fputc( '}', stderr );
+                SERVER_LOG( LOG_ALWAYS, "}" );
             }
-            fputc( ']', stderr );
+            SERVER_LOG( LOG_ALWAYS, "]" );
         }
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
 }
 
 static void dump_varargs_process_info( const char *prefix, data_size_t size )
@@ -1205,7 +1205,7 @@ static void dump_varargs_process_info( const char *prefix, data_size_t size )
     data_size_t pos = 0;
     unsigned int i;
 
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
 
     while (size - pos >= sizeof(struct process_info))
     {
@@ -1213,9 +1213,9 @@ static void dump_varargs_process_info( const char *prefix, data_size_t size )
         pos = (pos + 7) & ~7;
         process = (const struct process_info *)((const char *)cur_data + pos);
         if (size - pos < sizeof(*process)) break;
-        if (pos) fputc( ',', stderr );
+        if (pos) SERVER_LOG( LOG_ALWAYS, "," );
         dump_timeout( "{start_time=", &process->start_time );
-        fprintf( stderr, ",thread_count=%u,priority=%d,pid=%04x,parent_pid=%04x,session_id=%08x,handle_count=%u,unix_pid=%d,",
+        SERVER_LOG( LOG_ALWAYS, ",thread_count=%u,priority=%d,pid=%04x,parent_pid=%04x,session_id=%08x,handle_count=%u,unix_pid=%d,",
                  process->thread_count, process->priority, process->pid,
                  process->parent_pid, process->session_id, process->handle_count, process->unix_pid );
         pos += sizeof(*process);
@@ -1223,20 +1223,20 @@ static void dump_varargs_process_info( const char *prefix, data_size_t size )
         pos = dump_inline_unicode_string( "name=L\"", pos, process->name_len, size );
 
         pos = (pos + 7) & ~7;
-        fprintf( stderr, "\",threads={" );
+        SERVER_LOG( LOG_ALWAYS, "\",threads={" );
         for (i = 0; i < process->thread_count; i++)
         {
             const struct thread_info *thread = (const struct thread_info *)((const char *)cur_data + pos);
             if (size - pos < sizeof(*thread)) break;
-            if (i) fputc( ',', stderr );
+            if (i) SERVER_LOG( LOG_ALWAYS, "," );
             dump_timeout( "{start_time=", &thread->start_time );
-            fprintf( stderr, ",tid=%04x,base_priority=%d,current_priority=%d,unix_tid=%d}",
+            SERVER_LOG( LOG_ALWAYS, ",tid=%04x,base_priority=%d,current_priority=%d,unix_tid=%d}",
                      thread->tid, thread->base_priority, thread->current_priority, thread->unix_tid );
             pos += sizeof(*thread);
         }
-        fprintf( stderr, "}}" );
+        SERVER_LOG( LOG_ALWAYS, "}}" );
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
     remove_data( size );
 }
 
@@ -1244,7 +1244,7 @@ static void dump_varargs_object_attributes( const char *prefix, data_size_t size
 {
     const struct object_attributes *objattr = cur_data;
 
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     if (size)
     {
         const WCHAR *str;
@@ -1253,53 +1253,53 @@ static void dump_varargs_object_attributes( const char *prefix, data_size_t size
             (size - sizeof(*objattr) < objattr->sd_len) ||
             (size - sizeof(*objattr) - objattr->sd_len < objattr->name_len))
         {
-            fprintf( stderr, "***invalid***}" );
+            SERVER_LOG( LOG_ALWAYS, "***invalid***}" );
             remove_data( size );
             return;
         }
 
-        fprintf( stderr, "rootdir=%04x,attributes=%08x", objattr->rootdir, objattr->attributes );
+        SERVER_LOG( LOG_ALWAYS, "rootdir=%04x,attributes=%08x", objattr->rootdir, objattr->attributes );
         dump_inline_security_descriptor( ",sd=", (const struct security_descriptor *)(objattr + 1), objattr->sd_len );
         str = (const WCHAR *)objattr + (sizeof(*objattr) + objattr->sd_len) / sizeof(WCHAR);
-        fprintf( stderr, ",name=L\"" );
+        SERVER_LOG( LOG_ALWAYS, ",name=L\"" );
         dump_strW( str, objattr->name_len, stderr, "\"\"" );
-        fputc( '\"', stderr );
+        SERVER_LOG( LOG_ALWAYS, "\"" );
         remove_data( (sizeof(*objattr) + (objattr->sd_len & ~1) + (objattr->name_len & ~1) + 3) & ~3 );
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
 }
 
 static void dump_varargs_object_type_info( const char *prefix, data_size_t size )
 {
     const struct object_type_info *info = cur_data;
 
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     if (size)
     {
         if (size < sizeof(*info) || (size - sizeof(*info) < info->name_len))
         {
-            fprintf( stderr, "***invalid***}" );
+            SERVER_LOG( LOG_ALWAYS, "***invalid***}" );
             remove_data( size );
             return;
         }
 
-        fprintf( stderr, "index=%u,obj_count=%u,handle_count=%u,obj_max=%u,handle_max=%u,valid=%08x",
+        SERVER_LOG( LOG_ALWAYS, "index=%u,obj_count=%u,handle_count=%u,obj_max=%u,handle_max=%u,valid=%08x",
                  info->index,info->obj_count, info->handle_count, info->obj_max, info->handle_max,
                  info->valid_access );
         dump_generic_map( ",access=", &info->mapping );
-        fprintf( stderr, ",name=L\"" );
+        SERVER_LOG( LOG_ALWAYS, ",name=L\"" );
         dump_strW( (const WCHAR *)(info + 1), info->name_len, stderr, "\"\"" );
-        fputc( '\"', stderr );
+        SERVER_LOG( LOG_ALWAYS, "\"" );
         remove_data( min( size, sizeof(*info) + ((info->name_len + 2) & ~3 )));
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
 }
 
 static void dump_varargs_object_types_info( const char *prefix, data_size_t size )
 {
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     while (cur_size) dump_varargs_object_type_info( ",", cur_size );
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
 }
 
 static void dump_varargs_filesystem_event( const char *prefix, data_size_t size )
@@ -1316,7 +1316,7 @@ static void dump_varargs_filesystem_event( const char *prefix, data_size_t size 
         "MODIFIED_STREAM"
     };
 
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     while (size)
     {
         const struct filesystem_event *event = cur_data;
@@ -1324,15 +1324,15 @@ static void dump_varargs_filesystem_event( const char *prefix, data_size_t size 
                            / sizeof(int) * sizeof(int);
         if (size < len) break;
         if (event->action < ARRAY_SIZE( actions ) && actions[event->action])
-            fprintf( stderr, "{action=%s", actions[event->action] );
+            SERVER_LOG( LOG_ALWAYS, "{action=%s", actions[event->action] );
         else
-            fprintf( stderr, "{action=%u", event->action );
-        fprintf( stderr, ",name=\"%.*s\"}", event->len, event->name );
+            SERVER_LOG( LOG_ALWAYS, "{action=%u", event->action );
+        SERVER_LOG( LOG_ALWAYS, ",name=\"%.*s\"}", event->len, event->name );
         size -= len;
         remove_data( len );
-        if (size)fputc( ',', stderr );
+        if (size)SERVER_LOG( LOG_ALWAYS, "," );
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
 }
 
 static void dump_varargs_pe_image_info( const char *prefix, data_size_t size )
@@ -1341,17 +1341,17 @@ static void dump_varargs_pe_image_info( const char *prefix, data_size_t size )
 
     if (!size)
     {
-        fprintf( stderr, "%s{}", prefix );
+        SERVER_LOG( LOG_ALWAYS, "%s{}", prefix );
         return;
     }
     memset( &info, 0, sizeof(info) );
     memcpy( &info, cur_data, min( size, sizeof(info) ));
 
-    fprintf( stderr, "%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     dump_uint64( "base=", &info.base );
     dump_uint64( ",stack_size=", &info.stack_size );
     dump_uint64( ",stack_commit=", &info.stack_commit );
-    fprintf( stderr, ",entry_point=%08x,map_size=%08x,zerobits=%08x,subsystem=%08x,subsystem_minor=%04x,subsystem_major=%04x"
+    SERVER_LOG( LOG_ALWAYS, ",entry_point=%08x,map_size=%08x,zerobits=%08x,subsystem=%08x,subsystem_minor=%04x,subsystem_major=%04x"
              ",osversion_major=%04x,osversion_minor=%04x,image_charact=%04x,dll_charact=%04x,machine=%04x"
              ",contains_code=%u,image_flags=%02x"
              ",loader_flags=%08x,header_size=%08x,file_size=%08x,checksum=%08x}",
@@ -1366,34 +1366,34 @@ static void dump_varargs_rawinput_devices(const char *prefix, data_size_t size )
 {
     const struct rawinput_device *device;
 
-    fprintf( stderr, "%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     while (size >= sizeof(*device))
     {
         device = cur_data;
-        fprintf( stderr, "{usage_page=%04x,usage=%04x,flags=%08x,target=%08x}",
+        SERVER_LOG( LOG_ALWAYS, "{usage_page=%04x,usage=%04x,flags=%08x,target=%08x}",
                  device->usage_page, device->usage, device->flags, device->target );
         size -= sizeof(*device);
         remove_data( sizeof(*device) );
-        if (size) fputc( ',', stderr );
+        if (size) SERVER_LOG( LOG_ALWAYS, "," );
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
 }
 
 static void dump_varargs_handle_infos( const char *prefix, data_size_t size )
 {
     const struct handle_info *handle;
 
-    fprintf( stderr, "%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     while (size >= sizeof(*handle))
     {
         handle = cur_data;
-        fprintf( stderr, "{owner=%04x,handle=%04x,access=%08x,attributes=%08x,type=%u}",
+        SERVER_LOG( LOG_ALWAYS, "{owner=%04x,handle=%04x,access=%08x,attributes=%08x,type=%u}",
                  handle->owner, handle->handle, handle->access, handle->attributes, handle->type );
         size -= sizeof(*handle);
         remove_data( sizeof(*handle) );
-        if (size) fputc( ',', stderr );
+        if (size) SERVER_LOG( LOG_ALWAYS, "," );
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
 }
 
 static void dump_varargs_cpu_topology_override( const char *prefix, data_size_t size )
@@ -1404,13 +1404,13 @@ static void dump_varargs_cpu_topology_override( const char *prefix, data_size_t 
     if (size < sizeof(*cpu_topology))
         return;
 
-    fprintf( stderr,"%s{", prefix );
+    SERVER_LOG( LOG_ALWAYS, "%s{", prefix );
     for (i = 0; i < cpu_topology->cpu_count; ++i)
     {
-        if (i) fputc( ',', stderr );
-        fprintf( stderr, "%u", cpu_topology->host_cpu_id[i] );
+        if (i) SERVER_LOG( LOG_ALWAYS, "," );
+        SERVER_LOG( LOG_ALWAYS, "%u", cpu_topology->host_cpu_id[i] );
     }
-    fputc( '}', stderr );
+    SERVER_LOG( LOG_ALWAYS, "}" );
     remove_data( size );
 }
 
@@ -1421,16 +1421,16 @@ typedef void (*dump_func)( const void *req );
 
 static void dump_new_process_request( const struct new_process_request *req )
 {
-    fprintf( stderr, " token=%04x", req->token );
-    fprintf( stderr, ", debug=%04x", req->debug );
-    fprintf( stderr, ", parent_process=%04x", req->parent_process );
-    fprintf( stderr, ", flags=%08x", req->flags );
-    fprintf( stderr, ", socket_fd=%d", req->socket_fd );
-    fprintf( stderr, ", access=%08x", req->access );
-    fprintf( stderr, ", machine=%04x", req->machine );
-    fprintf( stderr, ", info_size=%u", req->info_size );
-    fprintf( stderr, ", handles_size=%u", req->handles_size );
-    fprintf( stderr, ", jobs_size=%u", req->jobs_size );
+    SERVER_LOG( LOG_ALWAYS, " token=%04x", req->token );
+    SERVER_LOG( LOG_ALWAYS, ", debug=%04x", req->debug );
+    SERVER_LOG( LOG_ALWAYS, ", parent_process=%04x", req->parent_process );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", socket_fd=%d", req->socket_fd );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", machine=%04x", req->machine );
+    SERVER_LOG( LOG_ALWAYS, ", info_size=%u", req->info_size );
+    SERVER_LOG( LOG_ALWAYS, ", handles_size=%u", req->handles_size );
+    SERVER_LOG( LOG_ALWAYS, ", jobs_size=%u", req->jobs_size );
     dump_varargs_object_attributes( ", objattr=", cur_size );
     dump_varargs_uints( ", handles=", min(cur_size,req->handles_size) );
     dump_varargs_uints( ", jobs=", min(cur_size,req->jobs_size) );
@@ -1440,35 +1440,35 @@ static void dump_new_process_request( const struct new_process_request *req )
 
 static void dump_new_process_reply( const struct new_process_reply *req )
 {
-    fprintf( stderr, " info=%04x", req->info );
-    fprintf( stderr, ", pid=%04x", req->pid );
-    fprintf( stderr, ", handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " info=%04x", req->info );
+    SERVER_LOG( LOG_ALWAYS, ", pid=%04x", req->pid );
+    SERVER_LOG( LOG_ALWAYS, ", handle=%04x", req->handle );
 }
 
 static void dump_get_new_process_info_request( const struct get_new_process_info_request *req )
 {
-    fprintf( stderr, " info=%04x", req->info );
+    SERVER_LOG( LOG_ALWAYS, " info=%04x", req->info );
 }
 
 static void dump_get_new_process_info_reply( const struct get_new_process_info_reply *req )
 {
-    fprintf( stderr, " success=%d", req->success );
-    fprintf( stderr, ", exit_code=%d", req->exit_code );
+    SERVER_LOG( LOG_ALWAYS, " success=%d", req->success );
+    SERVER_LOG( LOG_ALWAYS, ", exit_code=%d", req->exit_code );
 }
 
 static void dump_new_thread_request( const struct new_thread_request *req )
 {
-    fprintf( stderr, " process=%04x", req->process );
-    fprintf( stderr, ", access=%08x", req->access );
-    fprintf( stderr, ", flags=%08x", req->flags );
-    fprintf( stderr, ", request_fd=%d", req->request_fd );
+    SERVER_LOG( LOG_ALWAYS, " process=%04x", req->process );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", request_fd=%d", req->request_fd );
     dump_varargs_object_attributes( ", objattr=", cur_size );
 }
 
 static void dump_new_thread_reply( const struct new_thread_reply *req )
 {
-    fprintf( stderr, " tid=%04x", req->tid );
-    fprintf( stderr, ", handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " tid=%04x", req->tid );
+    SERVER_LOG( LOG_ALWAYS, ", handle=%04x", req->handle );
 }
 
 static void dump_get_startup_info_request( const struct get_startup_info_request *req )
@@ -1477,7 +1477,7 @@ static void dump_get_startup_info_request( const struct get_startup_info_request
 
 static void dump_get_startup_info_reply( const struct get_startup_info_reply *req )
 {
-    fprintf( stderr, " info_size=%u", req->info_size );
+    SERVER_LOG( LOG_ALWAYS, " info_size=%u", req->info_size );
     dump_varargs_startup_info( ", info=", min(cur_size,req->info_size) );
     dump_varargs_unicode_str( ", env=", cur_size );
 }
@@ -1493,111 +1493,111 @@ static void dump_init_process_done_reply( const struct init_process_done_reply *
 {
     dump_uint64( " entry=", &req->entry );
     dump_varargs_cpu_topology_override( ", cpu_override=", cur_size );
-    fprintf( stderr, ", suspend=%d", req->suspend );
+    SERVER_LOG( LOG_ALWAYS, ", suspend=%d", req->suspend );
 }
 
 static void dump_init_first_thread_request( const struct init_first_thread_request *req )
 {
-    fprintf( stderr, " unix_pid=%d", req->unix_pid );
-    fprintf( stderr, ", unix_tid=%d", req->unix_tid );
-    fprintf( stderr, ", debug_log_level=%d", req->debug_log_level );
-    fprintf( stderr, ", reply_fd=%d", req->reply_fd );
-    fprintf( stderr, ", wait_fd=%d", req->wait_fd );
+    SERVER_LOG( LOG_ALWAYS, " unix_pid=%d", req->unix_pid );
+    SERVER_LOG( LOG_ALWAYS, ", unix_tid=%d", req->unix_tid );
+    SERVER_LOG( LOG_ALWAYS, ", debug_log_level=%d", req->debug_log_level );
+    SERVER_LOG( LOG_ALWAYS, ", reply_fd=%d", req->reply_fd );
+    SERVER_LOG( LOG_ALWAYS, ", wait_fd=%d", req->wait_fd );
 }
 
 static void dump_init_first_thread_reply( const struct init_first_thread_reply *req )
 {
-    fprintf( stderr, " pid=%04x", req->pid );
-    fprintf( stderr, ", tid=%04x", req->tid );
+    SERVER_LOG( LOG_ALWAYS, " pid=%04x", req->pid );
+    SERVER_LOG( LOG_ALWAYS, ", tid=%04x", req->tid );
     dump_timeout( ", server_start=", &req->server_start );
-    fprintf( stderr, ", session_id=%08x", req->session_id );
-    fprintf( stderr, ", info_size=%u", req->info_size );
+    SERVER_LOG( LOG_ALWAYS, ", session_id=%08x", req->session_id );
+    SERVER_LOG( LOG_ALWAYS, ", info_size=%u", req->info_size );
     dump_varargs_ushorts( ", machines=", cur_size );
 }
 
 static void dump_init_thread_request( const struct init_thread_request *req )
 {
-    fprintf( stderr, " unix_tid=%d", req->unix_tid );
-    fprintf( stderr, ", reply_fd=%d", req->reply_fd );
-    fprintf( stderr, ", wait_fd=%d", req->wait_fd );
+    SERVER_LOG( LOG_ALWAYS, " unix_tid=%d", req->unix_tid );
+    SERVER_LOG( LOG_ALWAYS, ", reply_fd=%d", req->reply_fd );
+    SERVER_LOG( LOG_ALWAYS, ", wait_fd=%d", req->wait_fd );
     dump_uint64( ", teb=", &req->teb );
     dump_uint64( ", entry=", &req->entry );
 }
 
 static void dump_init_thread_reply( const struct init_thread_reply *req )
 {
-    fprintf( stderr, " suspend=%d", req->suspend );
+    SERVER_LOG( LOG_ALWAYS, " suspend=%d", req->suspend );
 }
 
 static void dump_terminate_process_request( const struct terminate_process_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", exit_code=%d", req->exit_code );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", exit_code=%d", req->exit_code );
 }
 
 static void dump_terminate_process_reply( const struct terminate_process_reply *req )
 {
-    fprintf( stderr, " self=%d", req->self );
+    SERVER_LOG( LOG_ALWAYS, " self=%d", req->self );
 }
 
 static void dump_terminate_thread_request( const struct terminate_thread_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", exit_code=%d", req->exit_code );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", exit_code=%d", req->exit_code );
 }
 
 static void dump_terminate_thread_reply( const struct terminate_thread_reply *req )
 {
-    fprintf( stderr, " self=%d", req->self );
+    SERVER_LOG( LOG_ALWAYS, " self=%d", req->self );
 }
 
 static void dump_get_process_info_request( const struct get_process_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_process_info_reply( const struct get_process_info_reply *req )
 {
-    fprintf( stderr, " pid=%04x", req->pid );
-    fprintf( stderr, ", ppid=%04x", req->ppid );
+    SERVER_LOG( LOG_ALWAYS, " pid=%04x", req->pid );
+    SERVER_LOG( LOG_ALWAYS, ", ppid=%04x", req->ppid );
     dump_uint64( ", affinity=", &req->affinity );
     dump_uint64( ", peb=", &req->peb );
     dump_timeout( ", start_time=", &req->start_time );
     dump_timeout( ", end_time=", &req->end_time );
-    fprintf( stderr, ", session_id=%08x", req->session_id );
-    fprintf( stderr, ", exit_code=%d", req->exit_code );
-    fprintf( stderr, ", priority=%d", req->priority );
-    fprintf( stderr, ", machine=%04x", req->machine );
+    SERVER_LOG( LOG_ALWAYS, ", session_id=%08x", req->session_id );
+    SERVER_LOG( LOG_ALWAYS, ", exit_code=%d", req->exit_code );
+    SERVER_LOG( LOG_ALWAYS, ", priority=%d", req->priority );
+    SERVER_LOG( LOG_ALWAYS, ", machine=%04x", req->machine );
     dump_varargs_pe_image_info( ", image=", cur_size );
 }
 
 static void dump_get_process_debug_info_request( const struct get_process_debug_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_process_debug_info_reply( const struct get_process_debug_info_reply *req )
 {
-    fprintf( stderr, " debug=%04x", req->debug );
-    fprintf( stderr, ", debug_children=%d", req->debug_children );
+    SERVER_LOG( LOG_ALWAYS, " debug=%04x", req->debug );
+    SERVER_LOG( LOG_ALWAYS, ", debug_children=%d", req->debug_children );
     dump_varargs_pe_image_info( ", image=", cur_size );
 }
 
 static void dump_get_process_image_name_request( const struct get_process_image_name_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", win32=%d", req->win32 );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", win32=%d", req->win32 );
 }
 
 static void dump_get_process_image_name_reply( const struct get_process_image_name_reply *req )
 {
-    fprintf( stderr, " len=%u", req->len );
+    SERVER_LOG( LOG_ALWAYS, " len=%u", req->len );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_get_process_vm_counters_request( const struct get_process_vm_counters_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_process_vm_counters_reply( const struct get_process_vm_counters_reply *req )
@@ -1612,93 +1612,93 @@ static void dump_get_process_vm_counters_reply( const struct get_process_vm_coun
 
 static void dump_set_process_info_request( const struct set_process_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", mask=%d", req->mask );
-    fprintf( stderr, ", priority=%d", req->priority );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", mask=%d", req->mask );
+    SERVER_LOG( LOG_ALWAYS, ", priority=%d", req->priority );
     dump_uint64( ", affinity=", &req->affinity );
 }
 
 static void dump_get_thread_info_request( const struct get_thread_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
 }
 
 static void dump_get_thread_info_reply( const struct get_thread_info_reply *req )
 {
-    fprintf( stderr, " pid=%04x", req->pid );
-    fprintf( stderr, ", tid=%04x", req->tid );
+    SERVER_LOG( LOG_ALWAYS, " pid=%04x", req->pid );
+    SERVER_LOG( LOG_ALWAYS, ", tid=%04x", req->tid );
     dump_uint64( ", teb=", &req->teb );
     dump_uint64( ", entry_point=", &req->entry_point );
     dump_uint64( ", affinity=", &req->affinity );
-    fprintf( stderr, ", exit_code=%d", req->exit_code );
-    fprintf( stderr, ", priority=%d", req->priority );
-    fprintf( stderr, ", last=%d", req->last );
-    fprintf( stderr, ", suspend_count=%d", req->suspend_count );
-    fprintf( stderr, ", dbg_hidden=%d", req->dbg_hidden );
-    fprintf( stderr, ", desc_len=%u", req->desc_len );
+    SERVER_LOG( LOG_ALWAYS, ", exit_code=%d", req->exit_code );
+    SERVER_LOG( LOG_ALWAYS, ", priority=%d", req->priority );
+    SERVER_LOG( LOG_ALWAYS, ", last=%d", req->last );
+    SERVER_LOG( LOG_ALWAYS, ", suspend_count=%d", req->suspend_count );
+    SERVER_LOG( LOG_ALWAYS, ", dbg_hidden=%d", req->dbg_hidden );
+    SERVER_LOG( LOG_ALWAYS, ", desc_len=%u", req->desc_len );
     dump_varargs_unicode_str( ", desc=", cur_size );
 }
 
 static void dump_get_thread_times_request( const struct get_thread_times_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_thread_times_reply( const struct get_thread_times_reply *req )
 {
     dump_timeout( " creation_time=", &req->creation_time );
     dump_timeout( ", exit_time=", &req->exit_time );
-    fprintf( stderr, ", unix_pid=%d", req->unix_pid );
-    fprintf( stderr, ", unix_tid=%d", req->unix_tid );
+    SERVER_LOG( LOG_ALWAYS, ", unix_pid=%d", req->unix_pid );
+    SERVER_LOG( LOG_ALWAYS, ", unix_tid=%d", req->unix_tid );
 }
 
 static void dump_set_thread_info_request( const struct set_thread_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", mask=%d", req->mask );
-    fprintf( stderr, ", priority=%d", req->priority );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", mask=%d", req->mask );
+    SERVER_LOG( LOG_ALWAYS, ", priority=%d", req->priority );
     dump_uint64( ", affinity=", &req->affinity );
     dump_uint64( ", entry_point=", &req->entry_point );
-    fprintf( stderr, ", token=%04x", req->token );
+    SERVER_LOG( LOG_ALWAYS, ", token=%04x", req->token );
     dump_varargs_unicode_str( ", desc=", cur_size );
 }
 
 static void dump_suspend_thread_request( const struct suspend_thread_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_suspend_thread_reply( const struct suspend_thread_reply *req )
 {
-    fprintf( stderr, " count=%d", req->count );
+    SERVER_LOG( LOG_ALWAYS, " count=%d", req->count );
 }
 
 static void dump_resume_thread_request( const struct resume_thread_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_resume_thread_reply( const struct resume_thread_reply *req )
 {
-    fprintf( stderr, " count=%d", req->count );
+    SERVER_LOG( LOG_ALWAYS, " count=%d", req->count );
 }
 
 static void dump_queue_apc_request( const struct queue_apc_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
     dump_apc_call( ", call=", &req->call );
 }
 
 static void dump_queue_apc_reply( const struct queue_apc_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", self=%d", req->self );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", self=%d", req->self );
 }
 
 static void dump_get_apc_result_request( const struct get_apc_result_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_apc_result_reply( const struct get_apc_result_reply *req )
@@ -1708,78 +1708,78 @@ static void dump_get_apc_result_reply( const struct get_apc_result_reply *req )
 
 static void dump_close_handle_request( const struct close_handle_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_set_handle_info_request( const struct set_handle_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", flags=%d", req->flags );
-    fprintf( stderr, ", mask=%d", req->mask );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%d", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", mask=%d", req->mask );
 }
 
 static void dump_set_handle_info_reply( const struct set_handle_info_reply *req )
 {
-    fprintf( stderr, " old_flags=%d", req->old_flags );
+    SERVER_LOG( LOG_ALWAYS, " old_flags=%d", req->old_flags );
 }
 
 static void dump_dup_handle_request( const struct dup_handle_request *req )
 {
-    fprintf( stderr, " src_process=%04x", req->src_process );
-    fprintf( stderr, ", src_handle=%04x", req->src_handle );
-    fprintf( stderr, ", dst_process=%04x", req->dst_process );
-    fprintf( stderr, ", access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", options=%08x", req->options );
+    SERVER_LOG( LOG_ALWAYS, " src_process=%04x", req->src_process );
+    SERVER_LOG( LOG_ALWAYS, ", src_handle=%04x", req->src_handle );
+    SERVER_LOG( LOG_ALWAYS, ", dst_process=%04x", req->dst_process );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", options=%08x", req->options );
 }
 
 static void dump_dup_handle_reply( const struct dup_handle_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_compare_objects_request( const struct compare_objects_request *req )
 {
-    fprintf( stderr, " first=%04x", req->first );
-    fprintf( stderr, ", second=%04x", req->second );
+    SERVER_LOG( LOG_ALWAYS, " first=%04x", req->first );
+    SERVER_LOG( LOG_ALWAYS, ", second=%04x", req->second );
 }
 
 static void dump_make_temporary_request( const struct make_temporary_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_open_process_request( const struct open_process_request *req )
 {
-    fprintf( stderr, " pid=%04x", req->pid );
-    fprintf( stderr, ", access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, " pid=%04x", req->pid );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
 }
 
 static void dump_open_process_reply( const struct open_process_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_open_thread_request( const struct open_thread_request *req )
 {
-    fprintf( stderr, " tid=%04x", req->tid );
-    fprintf( stderr, ", access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, " tid=%04x", req->tid );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
 }
 
 static void dump_open_thread_reply( const struct open_thread_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_select_request( const struct select_request *req )
 {
-    fprintf( stderr, " flags=%d", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " flags=%d", req->flags );
     dump_uint64( ", cookie=", &req->cookie );
     dump_abstime( ", timeout=", &req->timeout );
-    fprintf( stderr, ", size=%u", req->size );
-    fprintf( stderr, ", prev_apc=%04x", req->prev_apc );
+    SERVER_LOG( LOG_ALWAYS, ", size=%u", req->size );
+    SERVER_LOG( LOG_ALWAYS, ", prev_apc=%04x", req->prev_apc );
     dump_varargs_apc_result( ", result=", cur_size );
     dump_varargs_select_op( ", data=", min(cur_size,req->size) );
     dump_varargs_contexts( ", contexts=", cur_size );
@@ -1788,253 +1788,253 @@ static void dump_select_request( const struct select_request *req )
 static void dump_select_reply( const struct select_reply *req )
 {
     dump_apc_call( " call=", &req->call );
-    fprintf( stderr, ", apc_handle=%04x", req->apc_handle );
-    fprintf( stderr, ", signaled=%d", req->signaled );
+    SERVER_LOG( LOG_ALWAYS, ", apc_handle=%04x", req->apc_handle );
+    SERVER_LOG( LOG_ALWAYS, ", signaled=%d", req->signaled );
     dump_varargs_contexts( ", contexts=", cur_size );
 }
 
 static void dump_create_event_request( const struct create_event_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", manual_reset=%d", req->manual_reset );
-    fprintf( stderr, ", initial_state=%d", req->initial_state );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", manual_reset=%d", req->manual_reset );
+    SERVER_LOG( LOG_ALWAYS, ", initial_state=%d", req->initial_state );
     dump_varargs_object_attributes( ", objattr=", cur_size );
 }
 
 static void dump_create_event_reply( const struct create_event_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_event_op_request( const struct event_op_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", op=%d", req->op );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", op=%d", req->op );
 }
 
 static void dump_event_op_reply( const struct event_op_reply *req )
 {
-    fprintf( stderr, " state=%d", req->state );
+    SERVER_LOG( LOG_ALWAYS, " state=%d", req->state );
 }
 
 static void dump_query_event_request( const struct query_event_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_query_event_reply( const struct query_event_reply *req )
 {
-    fprintf( stderr, " manual_reset=%d", req->manual_reset );
-    fprintf( stderr, ", state=%d", req->state );
+    SERVER_LOG( LOG_ALWAYS, " manual_reset=%d", req->manual_reset );
+    SERVER_LOG( LOG_ALWAYS, ", state=%d", req->state );
 }
 
 static void dump_open_event_request( const struct open_event_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", rootdir=%04x", req->rootdir );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", rootdir=%04x", req->rootdir );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_open_event_reply( const struct open_event_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_create_keyed_event_request( const struct create_keyed_event_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
     dump_varargs_object_attributes( ", objattr=", cur_size );
 }
 
 static void dump_create_keyed_event_reply( const struct create_keyed_event_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_open_keyed_event_request( const struct open_keyed_event_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", rootdir=%04x", req->rootdir );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", rootdir=%04x", req->rootdir );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_open_keyed_event_reply( const struct open_keyed_event_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_create_mutex_request( const struct create_mutex_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", owned=%d", req->owned );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", owned=%d", req->owned );
     dump_varargs_object_attributes( ", objattr=", cur_size );
 }
 
 static void dump_create_mutex_reply( const struct create_mutex_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_release_mutex_request( const struct release_mutex_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_release_mutex_reply( const struct release_mutex_reply *req )
 {
-    fprintf( stderr, " prev_count=%08x", req->prev_count );
+    SERVER_LOG( LOG_ALWAYS, " prev_count=%08x", req->prev_count );
 }
 
 static void dump_open_mutex_request( const struct open_mutex_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", rootdir=%04x", req->rootdir );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", rootdir=%04x", req->rootdir );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_open_mutex_reply( const struct open_mutex_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_query_mutex_request( const struct query_mutex_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_query_mutex_reply( const struct query_mutex_reply *req )
 {
-    fprintf( stderr, " count=%08x", req->count );
-    fprintf( stderr, ", owned=%d", req->owned );
-    fprintf( stderr, ", abandoned=%d", req->abandoned );
+    SERVER_LOG( LOG_ALWAYS, " count=%08x", req->count );
+    SERVER_LOG( LOG_ALWAYS, ", owned=%d", req->owned );
+    SERVER_LOG( LOG_ALWAYS, ", abandoned=%d", req->abandoned );
 }
 
 static void dump_create_semaphore_request( const struct create_semaphore_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", initial=%08x", req->initial );
-    fprintf( stderr, ", max=%08x", req->max );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", initial=%08x", req->initial );
+    SERVER_LOG( LOG_ALWAYS, ", max=%08x", req->max );
     dump_varargs_object_attributes( ", objattr=", cur_size );
 }
 
 static void dump_create_semaphore_reply( const struct create_semaphore_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_release_semaphore_request( const struct release_semaphore_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", count=%08x", req->count );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", count=%08x", req->count );
 }
 
 static void dump_release_semaphore_reply( const struct release_semaphore_reply *req )
 {
-    fprintf( stderr, " prev_count=%08x", req->prev_count );
+    SERVER_LOG( LOG_ALWAYS, " prev_count=%08x", req->prev_count );
 }
 
 static void dump_query_semaphore_request( const struct query_semaphore_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_query_semaphore_reply( const struct query_semaphore_reply *req )
 {
-    fprintf( stderr, " current=%08x", req->current );
-    fprintf( stderr, ", max=%08x", req->max );
+    SERVER_LOG( LOG_ALWAYS, " current=%08x", req->current );
+    SERVER_LOG( LOG_ALWAYS, ", max=%08x", req->max );
 }
 
 static void dump_open_semaphore_request( const struct open_semaphore_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", rootdir=%04x", req->rootdir );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", rootdir=%04x", req->rootdir );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_open_semaphore_reply( const struct open_semaphore_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_create_file_request( const struct create_file_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", sharing=%08x", req->sharing );
-    fprintf( stderr, ", create=%d", req->create );
-    fprintf( stderr, ", options=%08x", req->options );
-    fprintf( stderr, ", attrs=%08x", req->attrs );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", sharing=%08x", req->sharing );
+    SERVER_LOG( LOG_ALWAYS, ", create=%d", req->create );
+    SERVER_LOG( LOG_ALWAYS, ", options=%08x", req->options );
+    SERVER_LOG( LOG_ALWAYS, ", attrs=%08x", req->attrs );
     dump_varargs_object_attributes( ", objattr=", cur_size );
     dump_varargs_string( ", filename=", cur_size );
 }
 
 static void dump_create_file_reply( const struct create_file_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_open_file_object_request( const struct open_file_object_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", rootdir=%04x", req->rootdir );
-    fprintf( stderr, ", sharing=%08x", req->sharing );
-    fprintf( stderr, ", options=%08x", req->options );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", rootdir=%04x", req->rootdir );
+    SERVER_LOG( LOG_ALWAYS, ", sharing=%08x", req->sharing );
+    SERVER_LOG( LOG_ALWAYS, ", options=%08x", req->options );
     dump_varargs_unicode_str( ", filename=", cur_size );
 }
 
 static void dump_open_file_object_reply( const struct open_file_object_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_alloc_file_handle_request( const struct alloc_file_handle_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", fd=%d", req->fd );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", fd=%d", req->fd );
 }
 
 static void dump_alloc_file_handle_reply( const struct alloc_file_handle_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_handle_unix_name_request( const struct get_handle_unix_name_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_handle_unix_name_reply( const struct get_handle_unix_name_reply *req )
 {
-    fprintf( stderr, " name_len=%u", req->name_len );
+    SERVER_LOG( LOG_ALWAYS, " name_len=%u", req->name_len );
     dump_varargs_string( ", name=", cur_size );
 }
 
 static void dump_get_handle_fd_request( const struct get_handle_fd_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_handle_fd_reply( const struct get_handle_fd_reply *req )
 {
-    fprintf( stderr, " type=%d", req->type );
-    fprintf( stderr, ", cacheable=%d", req->cacheable );
-    fprintf( stderr, ", access=%08x", req->access );
-    fprintf( stderr, ", options=%08x", req->options );
+    SERVER_LOG( LOG_ALWAYS, " type=%d", req->type );
+    SERVER_LOG( LOG_ALWAYS, ", cacheable=%d", req->cacheable );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", options=%08x", req->options );
 }
 
 static void dump_get_directory_cache_entry_request( const struct get_directory_cache_entry_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_directory_cache_entry_reply( const struct get_directory_cache_entry_reply *req )
 {
-    fprintf( stderr, " entry=%d", req->entry );
+    SERVER_LOG( LOG_ALWAYS, " entry=%d", req->entry );
     dump_varargs_ints( ", free=", cur_size );
 }
 
@@ -2045,13 +2045,13 @@ static void dump_flush_request( const struct flush_request *req )
 
 static void dump_flush_reply( const struct flush_reply *req )
 {
-    fprintf( stderr, " event=%04x", req->event );
+    SERVER_LOG( LOG_ALWAYS, " event=%04x", req->event );
 }
 
 static void dump_get_file_info_request( const struct get_file_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", info_class=%08x", req->info_class );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", info_class=%08x", req->info_class );
 }
 
 static void dump_get_file_info_reply( const struct get_file_info_reply *req )
@@ -2061,94 +2061,94 @@ static void dump_get_file_info_reply( const struct get_file_info_reply *req )
 
 static void dump_get_volume_info_request( const struct get_volume_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
     dump_async_data( ", async=", &req->async );
-    fprintf( stderr, ", info_class=%08x", req->info_class );
+    SERVER_LOG( LOG_ALWAYS, ", info_class=%08x", req->info_class );
 }
 
 static void dump_get_volume_info_reply( const struct get_volume_info_reply *req )
 {
-    fprintf( stderr, " wait=%04x", req->wait );
+    SERVER_LOG( LOG_ALWAYS, " wait=%04x", req->wait );
     dump_varargs_bytes( ", data=", cur_size );
 }
 
 static void dump_lock_file_request( const struct lock_file_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
     dump_uint64( ", offset=", &req->offset );
     dump_uint64( ", count=", &req->count );
-    fprintf( stderr, ", shared=%d", req->shared );
-    fprintf( stderr, ", wait=%d", req->wait );
+    SERVER_LOG( LOG_ALWAYS, ", shared=%d", req->shared );
+    SERVER_LOG( LOG_ALWAYS, ", wait=%d", req->wait );
 }
 
 static void dump_lock_file_reply( const struct lock_file_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", overlapped=%d", req->overlapped );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", overlapped=%d", req->overlapped );
 }
 
 static void dump_unlock_file_request( const struct unlock_file_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
     dump_uint64( ", offset=", &req->offset );
     dump_uint64( ", count=", &req->count );
 }
 
 static void dump_recv_socket_request( const struct recv_socket_request *req )
 {
-    fprintf( stderr, " oob=%d", req->oob );
+    SERVER_LOG( LOG_ALWAYS, " oob=%d", req->oob );
     dump_async_data( ", async=", &req->async );
-    fprintf( stderr, ", status=%08x", req->status );
-    fprintf( stderr, ", total=%08x", req->total );
+    SERVER_LOG( LOG_ALWAYS, ", status=%08x", req->status );
+    SERVER_LOG( LOG_ALWAYS, ", total=%08x", req->total );
 }
 
 static void dump_recv_socket_reply( const struct recv_socket_reply *req )
 {
-    fprintf( stderr, " wait=%04x", req->wait );
-    fprintf( stderr, ", options=%08x", req->options );
+    SERVER_LOG( LOG_ALWAYS, " wait=%04x", req->wait );
+    SERVER_LOG( LOG_ALWAYS, ", options=%08x", req->options );
 }
 
 static void dump_send_socket_request( const struct send_socket_request *req )
 {
     dump_async_data( " async=", &req->async );
-    fprintf( stderr, ", status=%08x", req->status );
-    fprintf( stderr, ", total=%08x", req->total );
+    SERVER_LOG( LOG_ALWAYS, ", status=%08x", req->status );
+    SERVER_LOG( LOG_ALWAYS, ", total=%08x", req->total );
 }
 
 static void dump_send_socket_reply( const struct send_socket_reply *req )
 {
-    fprintf( stderr, " wait=%04x", req->wait );
-    fprintf( stderr, ", options=%08x", req->options );
+    SERVER_LOG( LOG_ALWAYS, " wait=%04x", req->wait );
+    SERVER_LOG( LOG_ALWAYS, ", options=%08x", req->options );
 }
 
 static void dump_get_next_console_request_request( const struct get_next_console_request_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", signal=%d", req->signal );
-    fprintf( stderr, ", read=%d", req->read );
-    fprintf( stderr, ", status=%08x", req->status );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", signal=%d", req->signal );
+    SERVER_LOG( LOG_ALWAYS, ", read=%d", req->read );
+    SERVER_LOG( LOG_ALWAYS, ", status=%08x", req->status );
     dump_varargs_bytes( ", out_data=", cur_size );
 }
 
 static void dump_get_next_console_request_reply( const struct get_next_console_request_reply *req )
 {
-    fprintf( stderr, " code=%08x", req->code );
-    fprintf( stderr, ", output=%08x", req->output );
-    fprintf( stderr, ", out_size=%u", req->out_size );
+    SERVER_LOG( LOG_ALWAYS, " code=%08x", req->code );
+    SERVER_LOG( LOG_ALWAYS, ", output=%08x", req->output );
+    SERVER_LOG( LOG_ALWAYS, ", out_size=%u", req->out_size );
     dump_varargs_bytes( ", in_data=", cur_size );
 }
 
 static void dump_read_directory_changes_request( const struct read_directory_changes_request *req )
 {
-    fprintf( stderr, " filter=%08x", req->filter );
-    fprintf( stderr, ", subtree=%d", req->subtree );
-    fprintf( stderr, ", want_data=%d", req->want_data );
+    SERVER_LOG( LOG_ALWAYS, " filter=%08x", req->filter );
+    SERVER_LOG( LOG_ALWAYS, ", subtree=%d", req->subtree );
+    SERVER_LOG( LOG_ALWAYS, ", want_data=%d", req->want_data );
     dump_async_data( ", async=", &req->async );
 }
 
 static void dump_read_change_request( const struct read_change_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_read_change_reply( const struct read_change_reply *req )
@@ -2158,52 +2158,52 @@ static void dump_read_change_reply( const struct read_change_reply *req )
 
 static void dump_create_mapping_request( const struct create_mapping_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", flags=%08x", req->flags );
-    fprintf( stderr, ", file_access=%08x", req->file_access );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", file_access=%08x", req->file_access );
     dump_uint64( ", size=", &req->size );
-    fprintf( stderr, ", file_handle=%04x", req->file_handle );
+    SERVER_LOG( LOG_ALWAYS, ", file_handle=%04x", req->file_handle );
     dump_varargs_object_attributes( ", objattr=", cur_size );
 }
 
 static void dump_create_mapping_reply( const struct create_mapping_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_open_mapping_request( const struct open_mapping_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", rootdir=%04x", req->rootdir );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", rootdir=%04x", req->rootdir );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_open_mapping_reply( const struct open_mapping_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_mapping_info_request( const struct get_mapping_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
 }
 
 static void dump_get_mapping_info_reply( const struct get_mapping_info_reply *req )
 {
     dump_uint64( " size=", &req->size );
-    fprintf( stderr, ", flags=%08x", req->flags );
-    fprintf( stderr, ", shared_file=%04x", req->shared_file );
-    fprintf( stderr, ", total=%u", req->total );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", shared_file=%04x", req->shared_file );
+    SERVER_LOG( LOG_ALWAYS, ", total=%u", req->total );
     dump_varargs_pe_image_info( ", image=", cur_size );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_map_view_request( const struct map_view_request *req )
 {
-    fprintf( stderr, " mapping=%04x", req->mapping );
-    fprintf( stderr, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, " mapping=%04x", req->mapping );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
     dump_uint64( ", base=", &req->base );
     dump_uint64( ", size=", &req->size );
     dump_uint64( ", start=", &req->start );
@@ -2225,7 +2225,7 @@ static void dump_get_mapping_committed_range_request( const struct get_mapping_c
 static void dump_get_mapping_committed_range_reply( const struct get_mapping_committed_range_reply *req )
 {
     dump_uint64( " size=", &req->size );
-    fprintf( stderr, ", committed=%d", req->committed );
+    SERVER_LOG( LOG_ALWAYS, ", committed=%d", req->committed );
 }
 
 static void dump_add_mapping_committed_range_request( const struct add_mapping_committed_range_request *req )
@@ -2243,13 +2243,13 @@ static void dump_is_same_mapping_request( const struct is_same_mapping_request *
 
 static void dump_get_mapping_filename_request( const struct get_mapping_filename_request *req )
 {
-    fprintf( stderr, " process=%04x", req->process );
+    SERVER_LOG( LOG_ALWAYS, " process=%04x", req->process );
     dump_uint64( ", addr=", &req->addr );
 }
 
 static void dump_get_mapping_filename_reply( const struct get_mapping_filename_reply *req )
 {
-    fprintf( stderr, " len=%u", req->len );
+    SERVER_LOG( LOG_ALWAYS, " len=%u", req->len );
     dump_varargs_unicode_str( ", filename=", cur_size );
 }
 
@@ -2259,82 +2259,82 @@ static void dump_list_processes_request( const struct list_processes_request *re
 
 static void dump_list_processes_reply( const struct list_processes_reply *req )
 {
-    fprintf( stderr, " info_size=%u", req->info_size );
-    fprintf( stderr, ", process_count=%d", req->process_count );
-    fprintf( stderr, ", total_thread_count=%d", req->total_thread_count );
-    fprintf( stderr, ", total_name_len=%u", req->total_name_len );
+    SERVER_LOG( LOG_ALWAYS, " info_size=%u", req->info_size );
+    SERVER_LOG( LOG_ALWAYS, ", process_count=%d", req->process_count );
+    SERVER_LOG( LOG_ALWAYS, ", total_thread_count=%d", req->total_thread_count );
+    SERVER_LOG( LOG_ALWAYS, ", total_name_len=%u", req->total_name_len );
     dump_varargs_process_info( ", data=", min(cur_size,req->info_size) );
 }
 
 static void dump_create_debug_obj_request( const struct create_debug_obj_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
     dump_varargs_object_attributes( ", objattr=", cur_size );
 }
 
 static void dump_create_debug_obj_reply( const struct create_debug_obj_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_wait_debug_event_request( const struct wait_debug_event_request *req )
 {
-    fprintf( stderr, " debug=%04x", req->debug );
+    SERVER_LOG( LOG_ALWAYS, " debug=%04x", req->debug );
 }
 
 static void dump_wait_debug_event_reply( const struct wait_debug_event_reply *req )
 {
-    fprintf( stderr, " pid=%04x", req->pid );
-    fprintf( stderr, ", tid=%04x", req->tid );
+    SERVER_LOG( LOG_ALWAYS, " pid=%04x", req->pid );
+    SERVER_LOG( LOG_ALWAYS, ", tid=%04x", req->tid );
     dump_varargs_debug_event( ", event=", cur_size );
 }
 
 static void dump_queue_exception_event_request( const struct queue_exception_event_request *req )
 {
-    fprintf( stderr, " first=%d", req->first );
-    fprintf( stderr, ", code=%08x", req->code );
-    fprintf( stderr, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " first=%d", req->first );
+    SERVER_LOG( LOG_ALWAYS, ", code=%08x", req->code );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
     dump_uint64( ", record=", &req->record );
     dump_uint64( ", address=", &req->address );
-    fprintf( stderr, ", len=%u", req->len );
+    SERVER_LOG( LOG_ALWAYS, ", len=%u", req->len );
     dump_varargs_uints64( ", params=", min(cur_size,req->len) );
 }
 
 static void dump_queue_exception_event_reply( const struct queue_exception_event_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_exception_status_request( const struct get_exception_status_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_continue_debug_event_request( const struct continue_debug_event_request *req )
 {
-    fprintf( stderr, " debug=%04x", req->debug );
-    fprintf( stderr, ", pid=%04x", req->pid );
-    fprintf( stderr, ", tid=%04x", req->tid );
-    fprintf( stderr, ", status=%08x", req->status );
+    SERVER_LOG( LOG_ALWAYS, " debug=%04x", req->debug );
+    SERVER_LOG( LOG_ALWAYS, ", pid=%04x", req->pid );
+    SERVER_LOG( LOG_ALWAYS, ", tid=%04x", req->tid );
+    SERVER_LOG( LOG_ALWAYS, ", status=%08x", req->status );
 }
 
 static void dump_debug_process_request( const struct debug_process_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", debug=%04x", req->debug );
-    fprintf( stderr, ", attach=%d", req->attach );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", debug=%04x", req->debug );
+    SERVER_LOG( LOG_ALWAYS, ", attach=%d", req->attach );
 }
 
 static void dump_set_debug_obj_info_request( const struct set_debug_obj_info_request *req )
 {
-    fprintf( stderr, " debug=%04x", req->debug );
-    fprintf( stderr, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " debug=%04x", req->debug );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
 }
 
 static void dump_read_process_memory_request( const struct read_process_memory_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
     dump_uint64( ", addr=", &req->addr );
 }
 
@@ -2345,238 +2345,238 @@ static void dump_read_process_memory_reply( const struct read_process_memory_rep
 
 static void dump_write_process_memory_request( const struct write_process_memory_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
     dump_uint64( ", addr=", &req->addr );
     dump_varargs_bytes( ", data=", cur_size );
 }
 
 static void dump_create_key_request( const struct create_key_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", options=%08x", req->options );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", options=%08x", req->options );
     dump_varargs_object_attributes( ", objattr=", cur_size );
     dump_varargs_unicode_str( ", class=", cur_size );
 }
 
 static void dump_create_key_reply( const struct create_key_reply *req )
 {
-    fprintf( stderr, " hkey=%04x", req->hkey );
-    fprintf( stderr, ", created=%d", req->created );
+    SERVER_LOG( LOG_ALWAYS, " hkey=%04x", req->hkey );
+    SERVER_LOG( LOG_ALWAYS, ", created=%d", req->created );
 }
 
 static void dump_open_key_request( const struct open_key_request *req )
 {
-    fprintf( stderr, " parent=%04x", req->parent );
-    fprintf( stderr, ", access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, " parent=%04x", req->parent );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_open_key_reply( const struct open_key_reply *req )
 {
-    fprintf( stderr, " hkey=%04x", req->hkey );
+    SERVER_LOG( LOG_ALWAYS, " hkey=%04x", req->hkey );
 }
 
 static void dump_delete_key_request( const struct delete_key_request *req )
 {
-    fprintf( stderr, " hkey=%04x", req->hkey );
+    SERVER_LOG( LOG_ALWAYS, " hkey=%04x", req->hkey );
 }
 
 static void dump_flush_key_request( const struct flush_key_request *req )
 {
-    fprintf( stderr, " hkey=%04x", req->hkey );
+    SERVER_LOG( LOG_ALWAYS, " hkey=%04x", req->hkey );
 }
 
 static void dump_enum_key_request( const struct enum_key_request *req )
 {
-    fprintf( stderr, " hkey=%04x", req->hkey );
-    fprintf( stderr, ", index=%d", req->index );
-    fprintf( stderr, ", info_class=%d", req->info_class );
+    SERVER_LOG( LOG_ALWAYS, " hkey=%04x", req->hkey );
+    SERVER_LOG( LOG_ALWAYS, ", index=%d", req->index );
+    SERVER_LOG( LOG_ALWAYS, ", info_class=%d", req->info_class );
 }
 
 static void dump_enum_key_reply( const struct enum_key_reply *req )
 {
-    fprintf( stderr, " subkeys=%d", req->subkeys );
-    fprintf( stderr, ", max_subkey=%d", req->max_subkey );
-    fprintf( stderr, ", max_class=%d", req->max_class );
-    fprintf( stderr, ", values=%d", req->values );
-    fprintf( stderr, ", max_value=%d", req->max_value );
-    fprintf( stderr, ", max_data=%d", req->max_data );
+    SERVER_LOG( LOG_ALWAYS, " subkeys=%d", req->subkeys );
+    SERVER_LOG( LOG_ALWAYS, ", max_subkey=%d", req->max_subkey );
+    SERVER_LOG( LOG_ALWAYS, ", max_class=%d", req->max_class );
+    SERVER_LOG( LOG_ALWAYS, ", values=%d", req->values );
+    SERVER_LOG( LOG_ALWAYS, ", max_value=%d", req->max_value );
+    SERVER_LOG( LOG_ALWAYS, ", max_data=%d", req->max_data );
     dump_timeout( ", modif=", &req->modif );
-    fprintf( stderr, ", total=%u", req->total );
-    fprintf( stderr, ", namelen=%u", req->namelen );
+    SERVER_LOG( LOG_ALWAYS, ", total=%u", req->total );
+    SERVER_LOG( LOG_ALWAYS, ", namelen=%u", req->namelen );
     dump_varargs_unicode_str( ", name=", min(cur_size,req->namelen) );
     dump_varargs_unicode_str( ", class=", cur_size );
 }
 
 static void dump_set_key_value_request( const struct set_key_value_request *req )
 {
-    fprintf( stderr, " hkey=%04x", req->hkey );
-    fprintf( stderr, ", type=%d", req->type );
-    fprintf( stderr, ", namelen=%u", req->namelen );
+    SERVER_LOG( LOG_ALWAYS, " hkey=%04x", req->hkey );
+    SERVER_LOG( LOG_ALWAYS, ", type=%d", req->type );
+    SERVER_LOG( LOG_ALWAYS, ", namelen=%u", req->namelen );
     dump_varargs_unicode_str( ", name=", min(cur_size,req->namelen) );
     dump_varargs_bytes( ", data=", cur_size );
 }
 
 static void dump_get_key_value_request( const struct get_key_value_request *req )
 {
-    fprintf( stderr, " hkey=%04x", req->hkey );
+    SERVER_LOG( LOG_ALWAYS, " hkey=%04x", req->hkey );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_get_key_value_reply( const struct get_key_value_reply *req )
 {
-    fprintf( stderr, " type=%d", req->type );
-    fprintf( stderr, ", total=%u", req->total );
+    SERVER_LOG( LOG_ALWAYS, " type=%d", req->type );
+    SERVER_LOG( LOG_ALWAYS, ", total=%u", req->total );
     dump_varargs_bytes( ", data=", cur_size );
 }
 
 static void dump_enum_key_value_request( const struct enum_key_value_request *req )
 {
-    fprintf( stderr, " hkey=%04x", req->hkey );
-    fprintf( stderr, ", index=%d", req->index );
-    fprintf( stderr, ", info_class=%d", req->info_class );
+    SERVER_LOG( LOG_ALWAYS, " hkey=%04x", req->hkey );
+    SERVER_LOG( LOG_ALWAYS, ", index=%d", req->index );
+    SERVER_LOG( LOG_ALWAYS, ", info_class=%d", req->info_class );
 }
 
 static void dump_enum_key_value_reply( const struct enum_key_value_reply *req )
 {
-    fprintf( stderr, " type=%d", req->type );
-    fprintf( stderr, ", total=%u", req->total );
-    fprintf( stderr, ", namelen=%u", req->namelen );
+    SERVER_LOG( LOG_ALWAYS, " type=%d", req->type );
+    SERVER_LOG( LOG_ALWAYS, ", total=%u", req->total );
+    SERVER_LOG( LOG_ALWAYS, ", namelen=%u", req->namelen );
     dump_varargs_unicode_str( ", name=", min(cur_size,req->namelen) );
     dump_varargs_bytes( ", data=", cur_size );
 }
 
 static void dump_delete_key_value_request( const struct delete_key_value_request *req )
 {
-    fprintf( stderr, " hkey=%04x", req->hkey );
+    SERVER_LOG( LOG_ALWAYS, " hkey=%04x", req->hkey );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_load_registry_request( const struct load_registry_request *req )
 {
-    fprintf( stderr, " file=%04x", req->file );
+    SERVER_LOG( LOG_ALWAYS, " file=%04x", req->file );
     dump_varargs_object_attributes( ", objattr=", cur_size );
 }
 
 static void dump_unload_registry_request( const struct unload_registry_request *req )
 {
-    fprintf( stderr, " parent=%04x", req->parent );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, " parent=%04x", req->parent );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_save_registry_request( const struct save_registry_request *req )
 {
-    fprintf( stderr, " hkey=%04x", req->hkey );
-    fprintf( stderr, ", file=%04x", req->file );
+    SERVER_LOG( LOG_ALWAYS, " hkey=%04x", req->hkey );
+    SERVER_LOG( LOG_ALWAYS, ", file=%04x", req->file );
 }
 
 static void dump_set_registry_notification_request( const struct set_registry_notification_request *req )
 {
-    fprintf( stderr, " hkey=%04x", req->hkey );
-    fprintf( stderr, ", event=%04x", req->event );
-    fprintf( stderr, ", subtree=%d", req->subtree );
-    fprintf( stderr, ", filter=%08x", req->filter );
+    SERVER_LOG( LOG_ALWAYS, " hkey=%04x", req->hkey );
+    SERVER_LOG( LOG_ALWAYS, ", event=%04x", req->event );
+    SERVER_LOG( LOG_ALWAYS, ", subtree=%d", req->subtree );
+    SERVER_LOG( LOG_ALWAYS, ", filter=%08x", req->filter );
 }
 
 static void dump_create_timer_request( const struct create_timer_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", manual=%d", req->manual );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", manual=%d", req->manual );
     dump_varargs_object_attributes( ", objattr=", cur_size );
 }
 
 static void dump_create_timer_reply( const struct create_timer_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_open_timer_request( const struct open_timer_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", rootdir=%04x", req->rootdir );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", rootdir=%04x", req->rootdir );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_open_timer_reply( const struct open_timer_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_set_timer_request( const struct set_timer_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
     dump_timeout( ", expire=", &req->expire );
     dump_uint64( ", callback=", &req->callback );
     dump_uint64( ", arg=", &req->arg );
-    fprintf( stderr, ", period=%d", req->period );
+    SERVER_LOG( LOG_ALWAYS, ", period=%d", req->period );
 }
 
 static void dump_set_timer_reply( const struct set_timer_reply *req )
 {
-    fprintf( stderr, " signaled=%d", req->signaled );
+    SERVER_LOG( LOG_ALWAYS, " signaled=%d", req->signaled );
 }
 
 static void dump_cancel_timer_request( const struct cancel_timer_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_cancel_timer_reply( const struct cancel_timer_reply *req )
 {
-    fprintf( stderr, " signaled=%d", req->signaled );
+    SERVER_LOG( LOG_ALWAYS, " signaled=%d", req->signaled );
 }
 
 static void dump_get_timer_info_request( const struct get_timer_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_timer_info_reply( const struct get_timer_info_reply *req )
 {
     dump_timeout( " when=", &req->when );
-    fprintf( stderr, ", signaled=%d", req->signaled );
+    SERVER_LOG( LOG_ALWAYS, ", signaled=%d", req->signaled );
 }
 
 static void dump_get_thread_context_request( const struct get_thread_context_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", context=%04x", req->context );
-    fprintf( stderr, ", flags=%08x", req->flags );
-    fprintf( stderr, ", machine=%04x", req->machine );
+    SERVER_LOG( LOG_ALWAYS," handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS,", context=%04x", req->context );
+    SERVER_LOG( LOG_ALWAYS,", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS,", machine=%04x", req->machine );
 }
 
 static void dump_get_thread_context_reply( const struct get_thread_context_reply *req )
 {
-    fprintf( stderr, " self=%d", req->self );
-    fprintf( stderr, ", handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " self=%d", req->self );
+    SERVER_LOG( LOG_ALWAYS, ", handle=%04x", req->handle );
     dump_varargs_contexts( ", contexts=", cur_size );
 }
 
 static void dump_set_thread_context_request( const struct set_thread_context_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS," handle=%04x", req->handle );
     dump_varargs_contexts( ", contexts=", cur_size );
 }
 
 static void dump_set_thread_context_reply( const struct set_thread_context_reply *req )
 {
-    fprintf( stderr, " self=%d", req->self );
+    SERVER_LOG( LOG_ALWAYS, " self=%d", req->self );
 }
 
 static void dump_get_selector_entry_request( const struct get_selector_entry_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", entry=%d", req->entry );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", entry=%d", req->entry );
 }
 
 static void dump_get_selector_entry_reply( const struct get_selector_entry_reply *req )
 {
-    fprintf( stderr, " base=%08x", req->base );
-    fprintf( stderr, ", limit=%08x", req->limit );
-    fprintf( stderr, ", flags=%02x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " base=%08x", req->base );
+    SERVER_LOG( LOG_ALWAYS, ", limit=%08x", req->limit );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%02x", req->flags );
 }
 
 static void dump_add_atom_request( const struct add_atom_request *req )
@@ -2586,12 +2586,12 @@ static void dump_add_atom_request( const struct add_atom_request *req )
 
 static void dump_add_atom_reply( const struct add_atom_reply *req )
 {
-    fprintf( stderr, " atom=%04x", req->atom );
+    SERVER_LOG( LOG_ALWAYS, " atom=%04x", req->atom );
 }
 
 static void dump_delete_atom_request( const struct delete_atom_request *req )
 {
-    fprintf( stderr, " atom=%04x", req->atom );
+    SERVER_LOG( LOG_ALWAYS, " atom=%04x", req->atom );
 }
 
 static void dump_find_atom_request( const struct find_atom_request *req )
@@ -2601,19 +2601,19 @@ static void dump_find_atom_request( const struct find_atom_request *req )
 
 static void dump_find_atom_reply( const struct find_atom_reply *req )
 {
-    fprintf( stderr, " atom=%04x", req->atom );
+    SERVER_LOG( LOG_ALWAYS, " atom=%04x", req->atom );
 }
 
 static void dump_get_atom_information_request( const struct get_atom_information_request *req )
 {
-    fprintf( stderr, " atom=%04x", req->atom );
+    SERVER_LOG( LOG_ALWAYS, " atom=%04x", req->atom );
 }
 
 static void dump_get_atom_information_reply( const struct get_atom_information_reply *req )
 {
-    fprintf( stderr, " count=%d", req->count );
-    fprintf( stderr, ", pinned=%d", req->pinned );
-    fprintf( stderr, ", total=%u", req->total );
+    SERVER_LOG( LOG_ALWAYS, " count=%d", req->count );
+    SERVER_LOG( LOG_ALWAYS, ", pinned=%d", req->pinned );
+    SERVER_LOG( LOG_ALWAYS, ", total=%u", req->total );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
@@ -2623,55 +2623,55 @@ static void dump_get_msg_queue_request( const struct get_msg_queue_request *req 
 
 static void dump_get_msg_queue_reply( const struct get_msg_queue_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_set_queue_fd_request( const struct set_queue_fd_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_set_queue_mask_request( const struct set_queue_mask_request *req )
 {
-    fprintf( stderr, " wake_mask=%08x", req->wake_mask );
-    fprintf( stderr, ", changed_mask=%08x", req->changed_mask );
-    fprintf( stderr, ", skip_wait=%d", req->skip_wait );
+    SERVER_LOG( LOG_ALWAYS, " wake_mask=%08x", req->wake_mask );
+    SERVER_LOG( LOG_ALWAYS, ", changed_mask=%08x", req->changed_mask );
+    SERVER_LOG( LOG_ALWAYS, ", skip_wait=%d", req->skip_wait );
 }
 
 static void dump_set_queue_mask_reply( const struct set_queue_mask_reply *req )
 {
-    fprintf( stderr, " wake_bits=%08x", req->wake_bits );
-    fprintf( stderr, ", changed_bits=%08x", req->changed_bits );
+    SERVER_LOG( LOG_ALWAYS, " wake_bits=%08x", req->wake_bits );
+    SERVER_LOG( LOG_ALWAYS, ", changed_bits=%08x", req->changed_bits );
 }
 
 static void dump_get_queue_status_request( const struct get_queue_status_request *req )
 {
-    fprintf( stderr, " clear_bits=%08x", req->clear_bits );
+    SERVER_LOG( LOG_ALWAYS, " clear_bits=%08x", req->clear_bits );
 }
 
 static void dump_get_queue_status_reply( const struct get_queue_status_reply *req )
 {
-    fprintf( stderr, " wake_bits=%08x", req->wake_bits );
-    fprintf( stderr, ", changed_bits=%08x", req->changed_bits );
+    SERVER_LOG( LOG_ALWAYS, " wake_bits=%08x", req->wake_bits );
+    SERVER_LOG( LOG_ALWAYS, ", changed_bits=%08x", req->changed_bits );
 }
 
 static void dump_get_process_idle_event_request( const struct get_process_idle_event_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_process_idle_event_reply( const struct get_process_idle_event_reply *req )
 {
-    fprintf( stderr, " event=%04x", req->event );
+    SERVER_LOG( LOG_ALWAYS, " event=%04x", req->event );
 }
 
 static void dump_send_message_request( const struct send_message_request *req )
 {
-    fprintf( stderr, " id=%04x", req->id );
-    fprintf( stderr, ", type=%d", req->type );
-    fprintf( stderr, ", flags=%d", req->flags );
-    fprintf( stderr, ", win=%08x", req->win );
-    fprintf( stderr, ", msg=%08x", req->msg );
+    SERVER_LOG( LOG_ALWAYS, " id=%04x", req->id );
+    SERVER_LOG( LOG_ALWAYS, ", type=%d", req->type );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%d", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", win=%08x", req->win );
+    SERVER_LOG( LOG_ALWAYS, ", msg=%08x", req->msg );
     dump_uint64( ", wparam=", &req->wparam );
     dump_uint64( ", lparam=", &req->lparam );
     dump_timeout( ", timeout=", &req->timeout );
@@ -2680,68 +2680,68 @@ static void dump_send_message_request( const struct send_message_request *req )
 
 static void dump_post_quit_message_request( const struct post_quit_message_request *req )
 {
-    fprintf( stderr, " exit_code=%d", req->exit_code );
+    SERVER_LOG( LOG_ALWAYS, " exit_code=%d", req->exit_code );
 }
 
 static void dump_send_hardware_message_request( const struct send_hardware_message_request *req )
 {
-    fprintf( stderr, " win=%08x", req->win );
+    SERVER_LOG( LOG_ALWAYS, " win=%08x", req->win );
     dump_hw_input( ", input=", &req->input );
-    fprintf( stderr, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
     dump_varargs_bytes( ", report=", cur_size );
 }
 
 static void dump_send_hardware_message_reply( const struct send_hardware_message_reply *req )
 {
-    fprintf( stderr, " wait=%d", req->wait );
-    fprintf( stderr, ", prev_x=%d", req->prev_x );
-    fprintf( stderr, ", prev_y=%d", req->prev_y );
-    fprintf( stderr, ", new_x=%d", req->new_x );
-    fprintf( stderr, ", new_y=%d", req->new_y );
+    SERVER_LOG( LOG_ALWAYS, " wait=%d", req->wait );
+    SERVER_LOG( LOG_ALWAYS, ", prev_x=%d", req->prev_x );
+    SERVER_LOG( LOG_ALWAYS, ", prev_y=%d", req->prev_y );
+    SERVER_LOG( LOG_ALWAYS, ", new_x=%d", req->new_x );
+    SERVER_LOG( LOG_ALWAYS, ", new_y=%d", req->new_y );
     dump_varargs_bytes( ", keystate=", cur_size );
 }
 
 static void dump_get_message_request( const struct get_message_request *req )
 {
-    fprintf( stderr, " flags=%08x", req->flags );
-    fprintf( stderr, ", get_win=%08x", req->get_win );
-    fprintf( stderr, ", get_first=%08x", req->get_first );
-    fprintf( stderr, ", get_last=%08x", req->get_last );
-    fprintf( stderr, ", hw_id=%08x", req->hw_id );
-    fprintf( stderr, ", wake_mask=%08x", req->wake_mask );
-    fprintf( stderr, ", changed_mask=%08x", req->changed_mask );
+    SERVER_LOG( LOG_ALWAYS, " flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", get_win=%08x", req->get_win );
+    SERVER_LOG( LOG_ALWAYS, ", get_first=%08x", req->get_first );
+    SERVER_LOG( LOG_ALWAYS, ", get_last=%08x", req->get_last );
+    SERVER_LOG( LOG_ALWAYS, ", hw_id=%08x", req->hw_id );
+    SERVER_LOG( LOG_ALWAYS, ", wake_mask=%08x", req->wake_mask );
+    SERVER_LOG( LOG_ALWAYS, ", changed_mask=%08x", req->changed_mask );
 }
 
 static void dump_get_message_reply( const struct get_message_reply *req )
 {
-    fprintf( stderr, " win=%08x", req->win );
-    fprintf( stderr, ", msg=%08x", req->msg );
+    SERVER_LOG( LOG_ALWAYS, " win=%08x", req->win );
+    SERVER_LOG( LOG_ALWAYS, ", msg=%08x", req->msg );
     dump_uint64( ", wparam=", &req->wparam );
     dump_uint64( ", lparam=", &req->lparam );
-    fprintf( stderr, ", type=%d", req->type );
-    fprintf( stderr, ", x=%d", req->x );
-    fprintf( stderr, ", y=%d", req->y );
-    fprintf( stderr, ", time=%08x", req->time );
-    fprintf( stderr, ", active_hooks=%08x", req->active_hooks );
-    fprintf( stderr, ", total=%u", req->total );
+    SERVER_LOG( LOG_ALWAYS, ", type=%d", req->type );
+    SERVER_LOG( LOG_ALWAYS, ", x=%d", req->x );
+    SERVER_LOG( LOG_ALWAYS, ", y=%d", req->y );
+    SERVER_LOG( LOG_ALWAYS, ", time=%08x", req->time );
+    SERVER_LOG( LOG_ALWAYS, ", active_hooks=%08x", req->active_hooks );
+    SERVER_LOG( LOG_ALWAYS, ", total=%u", req->total );
     dump_varargs_message_data( ", data=", cur_size );
 }
 
 static void dump_reply_message_request( const struct reply_message_request *req )
 {
-    fprintf( stderr, " remove=%d", req->remove );
+    SERVER_LOG( LOG_ALWAYS, " remove=%d", req->remove );
     dump_uint64( ", result=", &req->result );
     dump_varargs_bytes( ", data=", cur_size );
 }
 
 static void dump_accept_hardware_message_request( const struct accept_hardware_message_request *req )
 {
-    fprintf( stderr, " hw_id=%08x", req->hw_id );
+    SERVER_LOG( LOG_ALWAYS, " hw_id=%08x", req->hw_id );
 }
 
 static void dump_get_message_reply_request( const struct get_message_reply_request *req )
 {
-    fprintf( stderr, " cancel=%d", req->cancel );
+    SERVER_LOG( LOG_ALWAYS, " cancel=%d", req->cancel );
 }
 
 static void dump_get_message_reply_reply( const struct get_message_reply_reply *req )
@@ -2752,9 +2752,9 @@ static void dump_get_message_reply_reply( const struct get_message_reply_reply *
 
 static void dump_set_win_timer_request( const struct set_win_timer_request *req )
 {
-    fprintf( stderr, " win=%08x", req->win );
-    fprintf( stderr, ", msg=%08x", req->msg );
-    fprintf( stderr, ", rate=%08x", req->rate );
+    SERVER_LOG( LOG_ALWAYS, " win=%08x", req->win );
+    SERVER_LOG( LOG_ALWAYS, ", msg=%08x", req->msg );
+    SERVER_LOG( LOG_ALWAYS, ", rate=%08x", req->rate );
     dump_uint64( ", id=", &req->id );
     dump_uint64( ", lparam=", &req->lparam );
 }
@@ -2766,52 +2766,52 @@ static void dump_set_win_timer_reply( const struct set_win_timer_reply *req )
 
 static void dump_kill_win_timer_request( const struct kill_win_timer_request *req )
 {
-    fprintf( stderr, " win=%08x", req->win );
+    SERVER_LOG( LOG_ALWAYS, " win=%08x", req->win );
     dump_uint64( ", id=", &req->id );
-    fprintf( stderr, ", msg=%08x", req->msg );
+    SERVER_LOG( LOG_ALWAYS, ", msg=%08x", req->msg );
 }
 
 static void dump_is_window_hung_request( const struct is_window_hung_request *req )
 {
-    fprintf( stderr, " win=%08x", req->win );
+    SERVER_LOG( LOG_ALWAYS, " win=%08x", req->win );
 }
 
 static void dump_is_window_hung_reply( const struct is_window_hung_reply *req )
 {
-    fprintf( stderr, " is_hung=%d", req->is_hung );
+    SERVER_LOG( LOG_ALWAYS, " is_hung=%d", req->is_hung );
 }
 
 static void dump_get_serial_info_request( const struct get_serial_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", flags=%d", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%d", req->flags );
 }
 
 static void dump_get_serial_info_reply( const struct get_serial_info_reply *req )
 {
-    fprintf( stderr, " eventmask=%08x", req->eventmask );
-    fprintf( stderr, ", cookie=%08x", req->cookie );
-    fprintf( stderr, ", pending_write=%08x", req->pending_write );
+    SERVER_LOG( LOG_ALWAYS, " eventmask=%08x", req->eventmask );
+    SERVER_LOG( LOG_ALWAYS, ", cookie=%08x", req->cookie );
+    SERVER_LOG( LOG_ALWAYS, ", pending_write=%08x", req->pending_write );
 }
 
 static void dump_set_serial_info_request( const struct set_serial_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", flags=%d", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%d", req->flags );
 }
 
 static void dump_register_async_request( const struct register_async_request *req )
 {
-    fprintf( stderr, " type=%d", req->type );
+    SERVER_LOG( LOG_ALWAYS, " type=%d", req->type );
     dump_async_data( ", async=", &req->async );
-    fprintf( stderr, ", count=%d", req->count );
+    SERVER_LOG( LOG_ALWAYS, ", count=%d", req->count );
 }
 
 static void dump_cancel_async_request( const struct cancel_async_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
     dump_uint64( ", iosb=", &req->iosb );
-    fprintf( stderr, ", only_thread=%d", req->only_thread );
+    SERVER_LOG( LOG_ALWAYS, ", only_thread=%d", req->only_thread );
 }
 
 static void dump_get_async_result_request( const struct get_async_result_request *req )
@@ -2832,8 +2832,8 @@ static void dump_read_request( const struct read_request *req )
 
 static void dump_read_reply( const struct read_reply *req )
 {
-    fprintf( stderr, " wait=%04x", req->wait );
-    fprintf( stderr, ", options=%08x", req->options );
+    SERVER_LOG( LOG_ALWAYS, " wait=%04x", req->wait );
+    SERVER_LOG( LOG_ALWAYS, ", options=%08x", req->options );
     dump_varargs_bytes( ", data=", cur_size );
 }
 
@@ -2846,9 +2846,9 @@ static void dump_write_request( const struct write_request *req )
 
 static void dump_write_reply( const struct write_reply *req )
 {
-    fprintf( stderr, " wait=%04x", req->wait );
-    fprintf( stderr, ", options=%08x", req->options );
-    fprintf( stderr, ", size=%u", req->size );
+    SERVER_LOG( LOG_ALWAYS, " wait=%04x", req->wait );
+    SERVER_LOG( LOG_ALWAYS, ", options=%08x", req->options );
+    SERVER_LOG( LOG_ALWAYS, ", size=%u", req->size );
 }
 
 static void dump_ioctl_request( const struct ioctl_request *req )
@@ -2860,214 +2860,214 @@ static void dump_ioctl_request( const struct ioctl_request *req )
 
 static void dump_ioctl_reply( const struct ioctl_reply *req )
 {
-    fprintf( stderr, " wait=%04x", req->wait );
-    fprintf( stderr, ", options=%08x", req->options );
+    SERVER_LOG( LOG_ALWAYS, " wait=%04x", req->wait );
+    SERVER_LOG( LOG_ALWAYS, ", options=%08x", req->options );
     dump_varargs_bytes( ", out_data=", cur_size );
 }
 
 static void dump_set_irp_result_request( const struct set_irp_result_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", status=%08x", req->status );
-    fprintf( stderr, ", size=%u", req->size );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", status=%08x", req->status );
+    SERVER_LOG( LOG_ALWAYS, ", size=%u", req->size );
     dump_varargs_bytes( ", data=", cur_size );
 }
 
 static void dump_create_named_pipe_request( const struct create_named_pipe_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", options=%08x", req->options );
-    fprintf( stderr, ", sharing=%08x", req->sharing );
-    fprintf( stderr, ", maxinstances=%08x", req->maxinstances );
-    fprintf( stderr, ", outsize=%08x", req->outsize );
-    fprintf( stderr, ", insize=%08x", req->insize );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", options=%08x", req->options );
+    SERVER_LOG( LOG_ALWAYS, ", sharing=%08x", req->sharing );
+    SERVER_LOG( LOG_ALWAYS, ", maxinstances=%08x", req->maxinstances );
+    SERVER_LOG( LOG_ALWAYS, ", outsize=%08x", req->outsize );
+    SERVER_LOG( LOG_ALWAYS, ", insize=%08x", req->insize );
     dump_timeout( ", timeout=", &req->timeout );
-    fprintf( stderr, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
     dump_varargs_object_attributes( ", objattr=", cur_size );
 }
 
 static void dump_create_named_pipe_reply( const struct create_named_pipe_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_set_named_pipe_info_request( const struct set_named_pipe_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
 }
 
 static void dump_create_window_request( const struct create_window_request *req )
 {
-    fprintf( stderr, " parent=%08x", req->parent );
-    fprintf( stderr, ", owner=%08x", req->owner );
-    fprintf( stderr, ", atom=%04x", req->atom );
+    SERVER_LOG( LOG_ALWAYS, " parent=%08x", req->parent );
+    SERVER_LOG( LOG_ALWAYS, ", owner=%08x", req->owner );
+    SERVER_LOG( LOG_ALWAYS, ", atom=%04x", req->atom );
     dump_uint64( ", instance=", &req->instance );
-    fprintf( stderr, ", dpi=%d", req->dpi );
-    fprintf( stderr, ", awareness=%d", req->awareness );
-    fprintf( stderr, ", style=%08x", req->style );
-    fprintf( stderr, ", ex_style=%08x", req->ex_style );
+    SERVER_LOG( LOG_ALWAYS, ", dpi=%d", req->dpi );
+    SERVER_LOG( LOG_ALWAYS, ", awareness=%d", req->awareness );
+    SERVER_LOG( LOG_ALWAYS, ", style=%08x", req->style );
+    SERVER_LOG( LOG_ALWAYS, ", ex_style=%08x", req->ex_style );
     dump_varargs_unicode_str( ", class=", cur_size );
 }
 
 static void dump_create_window_reply( const struct create_window_reply *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
-    fprintf( stderr, ", parent=%08x", req->parent );
-    fprintf( stderr, ", owner=%08x", req->owner );
-    fprintf( stderr, ", extra=%d", req->extra );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", parent=%08x", req->parent );
+    SERVER_LOG( LOG_ALWAYS, ", owner=%08x", req->owner );
+    SERVER_LOG( LOG_ALWAYS, ", extra=%d", req->extra );
     dump_uint64( ", class_ptr=", &req->class_ptr );
-    fprintf( stderr, ", dpi=%d", req->dpi );
-    fprintf( stderr, ", awareness=%d", req->awareness );
+    SERVER_LOG( LOG_ALWAYS, ", dpi=%d", req->dpi );
+    SERVER_LOG( LOG_ALWAYS, ", awareness=%d", req->awareness );
 }
 
 static void dump_destroy_window_request( const struct destroy_window_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
 }
 
 static void dump_get_desktop_window_request( const struct get_desktop_window_request *req )
 {
-    fprintf( stderr, " force=%d", req->force );
+    SERVER_LOG( LOG_ALWAYS, " force=%d", req->force );
 }
 
 static void dump_get_desktop_window_reply( const struct get_desktop_window_reply *req )
 {
-    fprintf( stderr, " top_window=%08x", req->top_window );
-    fprintf( stderr, ", msg_window=%08x", req->msg_window );
+    SERVER_LOG( LOG_ALWAYS, " top_window=%08x", req->top_window );
+    SERVER_LOG( LOG_ALWAYS, ", msg_window=%08x", req->msg_window );
 }
 
 static void dump_set_window_owner_request( const struct set_window_owner_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
-    fprintf( stderr, ", owner=%08x", req->owner );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", owner=%08x", req->owner );
 }
 
 static void dump_set_window_owner_reply( const struct set_window_owner_reply *req )
 {
-    fprintf( stderr, " full_owner=%08x", req->full_owner );
-    fprintf( stderr, ", prev_owner=%08x", req->prev_owner );
+    SERVER_LOG( LOG_ALWAYS, " full_owner=%08x", req->full_owner );
+    SERVER_LOG( LOG_ALWAYS, ", prev_owner=%08x", req->prev_owner );
 }
 
 static void dump_get_window_info_request( const struct get_window_info_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
 }
 
 static void dump_get_window_info_reply( const struct get_window_info_reply *req )
 {
-    fprintf( stderr, " full_handle=%08x", req->full_handle );
-    fprintf( stderr, ", last_active=%08x", req->last_active );
-    fprintf( stderr, ", pid=%04x", req->pid );
-    fprintf( stderr, ", tid=%04x", req->tid );
-    fprintf( stderr, ", atom=%04x", req->atom );
-    fprintf( stderr, ", is_unicode=%d", req->is_unicode );
-    fprintf( stderr, ", dpi=%d", req->dpi );
-    fprintf( stderr, ", awareness=%d", req->awareness );
+    SERVER_LOG( LOG_ALWAYS, " full_handle=%08x", req->full_handle );
+    SERVER_LOG( LOG_ALWAYS, ", last_active=%08x", req->last_active );
+    SERVER_LOG( LOG_ALWAYS, ", pid=%04x", req->pid );
+    SERVER_LOG( LOG_ALWAYS, ", tid=%04x", req->tid );
+    SERVER_LOG( LOG_ALWAYS, ", atom=%04x", req->atom );
+    SERVER_LOG( LOG_ALWAYS, ", is_unicode=%d", req->is_unicode );
+    SERVER_LOG( LOG_ALWAYS, ", dpi=%d", req->dpi );
+    SERVER_LOG( LOG_ALWAYS, ", awareness=%d", req->awareness );
 }
 
 static void dump_set_window_info_request( const struct set_window_info_request *req )
 {
-    fprintf( stderr, " flags=%04x", req->flags );
-    fprintf( stderr, ", is_unicode=%d", req->is_unicode );
-    fprintf( stderr, ", handle=%08x", req->handle );
-    fprintf( stderr, ", style=%08x", req->style );
-    fprintf( stderr, ", ex_style=%08x", req->ex_style );
-    fprintf( stderr, ", id=%08x", req->id );
+    SERVER_LOG( LOG_ALWAYS, " flags=%04x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", is_unicode=%d", req->is_unicode );
+    SERVER_LOG( LOG_ALWAYS, ", handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", style=%08x", req->style );
+    SERVER_LOG( LOG_ALWAYS, ", ex_style=%08x", req->ex_style );
+    SERVER_LOG( LOG_ALWAYS, ", id=%08x", req->id );
     dump_uint64( ", instance=", &req->instance );
     dump_uint64( ", user_data=", &req->user_data );
-    fprintf( stderr, ", extra_offset=%d", req->extra_offset );
-    fprintf( stderr, ", extra_size=%u", req->extra_size );
+    SERVER_LOG( LOG_ALWAYS, ", extra_offset=%d", req->extra_offset );
+    SERVER_LOG( LOG_ALWAYS, ", extra_size=%u", req->extra_size );
     dump_uint64( ", extra_value=", &req->extra_value );
 }
 
 static void dump_set_window_info_reply( const struct set_window_info_reply *req )
 {
-    fprintf( stderr, " old_style=%08x", req->old_style );
-    fprintf( stderr, ", old_ex_style=%08x", req->old_ex_style );
+    SERVER_LOG( LOG_ALWAYS, " old_style=%08x", req->old_style );
+    SERVER_LOG( LOG_ALWAYS, ", old_ex_style=%08x", req->old_ex_style );
     dump_uint64( ", old_instance=", &req->old_instance );
     dump_uint64( ", old_user_data=", &req->old_user_data );
     dump_uint64( ", old_extra_value=", &req->old_extra_value );
-    fprintf( stderr, ", old_id=%08x", req->old_id );
+    SERVER_LOG( LOG_ALWAYS, ", old_id=%08x", req->old_id );
 }
 
 static void dump_set_parent_request( const struct set_parent_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
-    fprintf( stderr, ", parent=%08x", req->parent );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", parent=%08x", req->parent );
 }
 
 static void dump_set_parent_reply( const struct set_parent_reply *req )
 {
-    fprintf( stderr, " old_parent=%08x", req->old_parent );
-    fprintf( stderr, ", full_parent=%08x", req->full_parent );
-    fprintf( stderr, ", dpi=%d", req->dpi );
-    fprintf( stderr, ", awareness=%d", req->awareness );
+    SERVER_LOG( LOG_ALWAYS, " old_parent=%08x", req->old_parent );
+    SERVER_LOG( LOG_ALWAYS, ", full_parent=%08x", req->full_parent );
+    SERVER_LOG( LOG_ALWAYS, ", dpi=%d", req->dpi );
+    SERVER_LOG( LOG_ALWAYS, ", awareness=%d", req->awareness );
 }
 
 static void dump_get_window_parents_request( const struct get_window_parents_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
 }
 
 static void dump_get_window_parents_reply( const struct get_window_parents_reply *req )
 {
-    fprintf( stderr, " count=%d", req->count );
+    SERVER_LOG( LOG_ALWAYS, " count=%d", req->count );
     dump_varargs_user_handles( ", parents=", cur_size );
 }
 
 static void dump_get_window_children_request( const struct get_window_children_request *req )
 {
-    fprintf( stderr, " desktop=%04x", req->desktop );
-    fprintf( stderr, ", parent=%08x", req->parent );
-    fprintf( stderr, ", atom=%04x", req->atom );
-    fprintf( stderr, ", tid=%04x", req->tid );
+    SERVER_LOG( LOG_ALWAYS, " desktop=%04x", req->desktop );
+    SERVER_LOG( LOG_ALWAYS, ", parent=%08x", req->parent );
+    SERVER_LOG( LOG_ALWAYS, ", atom=%04x", req->atom );
+    SERVER_LOG( LOG_ALWAYS, ", tid=%04x", req->tid );
     dump_varargs_unicode_str( ", class=", cur_size );
 }
 
 static void dump_get_window_children_reply( const struct get_window_children_reply *req )
 {
-    fprintf( stderr, " count=%d", req->count );
+    SERVER_LOG( LOG_ALWAYS, " count=%d", req->count );
     dump_varargs_user_handles( ", children=", cur_size );
 }
 
 static void dump_get_window_children_from_point_request( const struct get_window_children_from_point_request *req )
 {
-    fprintf( stderr, " parent=%08x", req->parent );
-    fprintf( stderr, ", x=%d", req->x );
-    fprintf( stderr, ", y=%d", req->y );
-    fprintf( stderr, ", dpi=%d", req->dpi );
+    SERVER_LOG( LOG_ALWAYS, " parent=%08x", req->parent );
+    SERVER_LOG( LOG_ALWAYS, ", x=%d", req->x );
+    SERVER_LOG( LOG_ALWAYS, ", y=%d", req->y );
+    SERVER_LOG( LOG_ALWAYS, ", dpi=%d", req->dpi );
 }
 
 static void dump_get_window_children_from_point_reply( const struct get_window_children_from_point_reply *req )
 {
-    fprintf( stderr, " count=%d", req->count );
+    SERVER_LOG( LOG_ALWAYS, " count=%d", req->count );
     dump_varargs_user_handles( ", children=", cur_size );
 }
 
 static void dump_get_window_tree_request( const struct get_window_tree_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
 }
 
 static void dump_get_window_tree_reply( const struct get_window_tree_reply *req )
 {
-    fprintf( stderr, " parent=%08x", req->parent );
-    fprintf( stderr, ", owner=%08x", req->owner );
-    fprintf( stderr, ", next_sibling=%08x", req->next_sibling );
-    fprintf( stderr, ", prev_sibling=%08x", req->prev_sibling );
-    fprintf( stderr, ", first_sibling=%08x", req->first_sibling );
-    fprintf( stderr, ", last_sibling=%08x", req->last_sibling );
-    fprintf( stderr, ", first_child=%08x", req->first_child );
-    fprintf( stderr, ", last_child=%08x", req->last_child );
+    SERVER_LOG( LOG_ALWAYS, " parent=%08x", req->parent );
+    SERVER_LOG( LOG_ALWAYS, ", owner=%08x", req->owner );
+    SERVER_LOG( LOG_ALWAYS, ", next_sibling=%08x", req->next_sibling );
+    SERVER_LOG( LOG_ALWAYS, ", prev_sibling=%08x", req->prev_sibling );
+    SERVER_LOG( LOG_ALWAYS, ", first_sibling=%08x", req->first_sibling );
+    SERVER_LOG( LOG_ALWAYS, ", last_sibling=%08x", req->last_sibling );
+    SERVER_LOG( LOG_ALWAYS, ", first_child=%08x", req->first_child );
+    SERVER_LOG( LOG_ALWAYS, ", last_child=%08x", req->last_child );
 }
 
 static void dump_set_window_pos_request( const struct set_window_pos_request *req )
 {
-    fprintf( stderr, " swp_flags=%04x", req->swp_flags );
-    fprintf( stderr, ", paint_flags=%04x", req->paint_flags );
-    fprintf( stderr, ", handle=%08x", req->handle );
-    fprintf( stderr, ", previous=%08x", req->previous );
+    SERVER_LOG( LOG_ALWAYS, " swp_flags=%04x", req->swp_flags );
+    SERVER_LOG( LOG_ALWAYS, ", paint_flags=%04x", req->paint_flags );
+    SERVER_LOG( LOG_ALWAYS, ", handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", previous=%08x", req->previous );
     dump_rectangle( ", window=", &req->window );
     dump_rectangle( ", client=", &req->client );
     dump_varargs_rectangles( ", valid=", cur_size );
@@ -3075,17 +3075,17 @@ static void dump_set_window_pos_request( const struct set_window_pos_request *re
 
 static void dump_set_window_pos_reply( const struct set_window_pos_reply *req )
 {
-    fprintf( stderr, " new_style=%08x", req->new_style );
-    fprintf( stderr, ", new_ex_style=%08x", req->new_ex_style );
-    fprintf( stderr, ", surface_win=%08x", req->surface_win );
-    fprintf( stderr, ", needs_update=%d", req->needs_update );
+    SERVER_LOG( LOG_ALWAYS, " new_style=%08x", req->new_style );
+    SERVER_LOG( LOG_ALWAYS, ", new_ex_style=%08x", req->new_ex_style );
+    SERVER_LOG( LOG_ALWAYS, ", surface_win=%08x", req->surface_win );
+    SERVER_LOG( LOG_ALWAYS, ", needs_update=%d", req->needs_update );
 }
 
 static void dump_get_window_rectangles_request( const struct get_window_rectangles_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
-    fprintf( stderr, ", relative=%d", req->relative );
-    fprintf( stderr, ", dpi=%d", req->dpi );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", relative=%d", req->relative );
+    SERVER_LOG( LOG_ALWAYS, ", dpi=%d", req->dpi );
 }
 
 static void dump_get_window_rectangles_reply( const struct get_window_rectangles_reply *req )
@@ -3096,121 +3096,121 @@ static void dump_get_window_rectangles_reply( const struct get_window_rectangles
 
 static void dump_get_window_text_request( const struct get_window_text_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
 }
 
 static void dump_get_window_text_reply( const struct get_window_text_reply *req )
 {
-    fprintf( stderr, " length=%u", req->length );
+    SERVER_LOG( LOG_ALWAYS, " length=%u", req->length );
     dump_varargs_unicode_str( ", text=", cur_size );
 }
 
 static void dump_set_window_text_request( const struct set_window_text_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
     dump_varargs_unicode_str( ", text=", cur_size );
 }
 
 static void dump_get_windows_offset_request( const struct get_windows_offset_request *req )
 {
-    fprintf( stderr, " from=%08x", req->from );
-    fprintf( stderr, ", to=%08x", req->to );
-    fprintf( stderr, ", dpi=%d", req->dpi );
+    SERVER_LOG( LOG_ALWAYS, " from=%08x", req->from );
+    SERVER_LOG( LOG_ALWAYS, ", to=%08x", req->to );
+    SERVER_LOG( LOG_ALWAYS, ", dpi=%d", req->dpi );
 }
 
 static void dump_get_windows_offset_reply( const struct get_windows_offset_reply *req )
 {
-    fprintf( stderr, " x=%d", req->x );
-    fprintf( stderr, ", y=%d", req->y );
-    fprintf( stderr, ", mirror=%d", req->mirror );
+    SERVER_LOG( LOG_ALWAYS, " x=%d", req->x );
+    SERVER_LOG( LOG_ALWAYS, ", y=%d", req->y );
+    SERVER_LOG( LOG_ALWAYS, ", mirror=%d", req->mirror );
 }
 
 static void dump_get_visible_region_request( const struct get_visible_region_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
-    fprintf( stderr, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
 }
 
 static void dump_get_visible_region_reply( const struct get_visible_region_reply *req )
 {
-    fprintf( stderr, " top_win=%08x", req->top_win );
+    SERVER_LOG( LOG_ALWAYS, " top_win=%08x", req->top_win );
     dump_rectangle( ", top_rect=", &req->top_rect );
     dump_rectangle( ", win_rect=", &req->win_rect );
-    fprintf( stderr, ", paint_flags=%08x", req->paint_flags );
-    fprintf( stderr, ", total_size=%u", req->total_size );
+    SERVER_LOG( LOG_ALWAYS, ", paint_flags=%08x", req->paint_flags );
+    SERVER_LOG( LOG_ALWAYS, ", total_size=%u", req->total_size );
     dump_varargs_rectangles( ", region=", cur_size );
 }
 
 static void dump_get_surface_region_request( const struct get_surface_region_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
 }
 
 static void dump_get_surface_region_reply( const struct get_surface_region_reply *req )
 {
     dump_rectangle( " visible_rect=", &req->visible_rect );
-    fprintf( stderr, ", total_size=%u", req->total_size );
+    SERVER_LOG( LOG_ALWAYS, ", total_size=%u", req->total_size );
     dump_varargs_rectangles( ", region=", cur_size );
 }
 
 static void dump_get_window_region_request( const struct get_window_region_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
 }
 
 static void dump_get_window_region_reply( const struct get_window_region_reply *req )
 {
-    fprintf( stderr, " total_size=%u", req->total_size );
+    SERVER_LOG( LOG_ALWAYS, " total_size=%u", req->total_size );
     dump_varargs_rectangles( ", region=", cur_size );
 }
 
 static void dump_set_window_region_request( const struct set_window_region_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
-    fprintf( stderr, ", redraw=%d", req->redraw );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, ", redraw=%d", req->redraw );
     dump_varargs_rectangles( ", region=", cur_size );
 }
 
 static void dump_get_update_region_request( const struct get_update_region_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
-    fprintf( stderr, ", from_child=%08x", req->from_child );
-    fprintf( stderr, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, ", from_child=%08x", req->from_child );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
 }
 
 static void dump_get_update_region_reply( const struct get_update_region_reply *req )
 {
-    fprintf( stderr, " child=%08x", req->child );
-    fprintf( stderr, ", flags=%08x", req->flags );
-    fprintf( stderr, ", total_size=%u", req->total_size );
+    SERVER_LOG( LOG_ALWAYS, " child=%08x", req->child );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", total_size=%u", req->total_size );
     dump_varargs_rectangles( ", region=", cur_size );
 }
 
 static void dump_update_window_zorder_request( const struct update_window_zorder_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
     dump_rectangle( ", rect=", &req->rect );
 }
 
 static void dump_redraw_window_request( const struct redraw_window_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
-    fprintf( stderr, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
     dump_varargs_rectangles( ", region=", cur_size );
 }
 
 static void dump_set_window_property_request( const struct set_window_property_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
     dump_uint64( ", data=", &req->data );
-    fprintf( stderr, ", atom=%04x", req->atom );
+    SERVER_LOG( LOG_ALWAYS, ", atom=%04x", req->atom );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_remove_window_property_request( const struct remove_window_property_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
-    fprintf( stderr, ", atom=%04x", req->atom );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, ", atom=%04x", req->atom );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
@@ -3221,8 +3221,8 @@ static void dump_remove_window_property_reply( const struct remove_window_proper
 
 static void dump_get_window_property_request( const struct get_window_property_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
-    fprintf( stderr, ", atom=%04x", req->atom );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, ", atom=%04x", req->atom );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
@@ -3233,45 +3233,45 @@ static void dump_get_window_property_reply( const struct get_window_property_rep
 
 static void dump_get_window_properties_request( const struct get_window_properties_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
 }
 
 static void dump_get_window_properties_reply( const struct get_window_properties_reply *req )
 {
-    fprintf( stderr, " total=%d", req->total );
+    SERVER_LOG( LOG_ALWAYS, " total=%d", req->total );
     dump_varargs_properties( ", props=", cur_size );
 }
 
 static void dump_create_winstation_request( const struct create_winstation_request *req )
 {
-    fprintf( stderr, " flags=%08x", req->flags );
-    fprintf( stderr, ", access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", rootdir=%04x", req->rootdir );
+    SERVER_LOG( LOG_ALWAYS, " flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", rootdir=%04x", req->rootdir );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_create_winstation_reply( const struct create_winstation_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_open_winstation_request( const struct open_winstation_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", rootdir=%04x", req->rootdir );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", rootdir=%04x", req->rootdir );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_open_winstation_reply( const struct open_winstation_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_close_winstation_request( const struct close_winstation_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_process_winstation_request( const struct get_process_winstation_request *req )
@@ -3280,160 +3280,160 @@ static void dump_get_process_winstation_request( const struct get_process_winsta
 
 static void dump_get_process_winstation_reply( const struct get_process_winstation_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_set_process_winstation_request( const struct set_process_winstation_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_enum_winstation_request( const struct enum_winstation_request *req )
 {
-    fprintf( stderr, " index=%08x", req->index );
+    SERVER_LOG( LOG_ALWAYS, " index=%08x", req->index );
 }
 
 static void dump_enum_winstation_reply( const struct enum_winstation_reply *req )
 {
-    fprintf( stderr, " next=%08x", req->next );
+    SERVER_LOG( LOG_ALWAYS, " next=%08x", req->next );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_create_desktop_request( const struct create_desktop_request *req )
 {
-    fprintf( stderr, " flags=%08x", req->flags );
-    fprintf( stderr, ", access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, " flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_create_desktop_reply( const struct create_desktop_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_open_desktop_request( const struct open_desktop_request *req )
 {
-    fprintf( stderr, " winsta=%04x", req->winsta );
-    fprintf( stderr, ", flags=%08x", req->flags );
-    fprintf( stderr, ", access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, " winsta=%04x", req->winsta );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_open_desktop_reply( const struct open_desktop_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_open_input_desktop_request( const struct open_input_desktop_request *req )
 {
-    fprintf( stderr, " flags=%08x", req->flags );
-    fprintf( stderr, ", access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, " flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
 }
 
 static void dump_open_input_desktop_reply( const struct open_input_desktop_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_close_desktop_request( const struct close_desktop_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_thread_desktop_request( const struct get_thread_desktop_request *req )
 {
-    fprintf( stderr, " tid=%04x", req->tid );
+    SERVER_LOG( LOG_ALWAYS, " tid=%04x", req->tid );
 }
 
 static void dump_get_thread_desktop_reply( const struct get_thread_desktop_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_set_thread_desktop_request( const struct set_thread_desktop_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_enum_desktop_request( const struct enum_desktop_request *req )
 {
-    fprintf( stderr, " winstation=%04x", req->winstation );
-    fprintf( stderr, ", index=%08x", req->index );
+    SERVER_LOG( LOG_ALWAYS, " winstation=%04x", req->winstation );
+    SERVER_LOG( LOG_ALWAYS, ", index=%08x", req->index );
 }
 
 static void dump_enum_desktop_reply( const struct enum_desktop_reply *req )
 {
-    fprintf( stderr, " next=%08x", req->next );
+    SERVER_LOG( LOG_ALWAYS, " next=%08x", req->next );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_set_user_object_info_request( const struct set_user_object_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", flags=%08x", req->flags );
-    fprintf( stderr, ", obj_flags=%08x", req->obj_flags );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", obj_flags=%08x", req->obj_flags );
 }
 
 static void dump_set_user_object_info_reply( const struct set_user_object_info_reply *req )
 {
-    fprintf( stderr, " is_desktop=%d", req->is_desktop );
-    fprintf( stderr, ", old_obj_flags=%08x", req->old_obj_flags );
+    SERVER_LOG( LOG_ALWAYS, " is_desktop=%d", req->is_desktop );
+    SERVER_LOG( LOG_ALWAYS, ", old_obj_flags=%08x", req->old_obj_flags );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_register_hotkey_request( const struct register_hotkey_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
-    fprintf( stderr, ", id=%d", req->id );
-    fprintf( stderr, ", flags=%08x", req->flags );
-    fprintf( stderr, ", vkey=%08x", req->vkey );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, ", id=%d", req->id );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", vkey=%08x", req->vkey );
 }
 
 static void dump_register_hotkey_reply( const struct register_hotkey_reply *req )
 {
-    fprintf( stderr, " replaced=%d", req->replaced );
-    fprintf( stderr, ", flags=%08x", req->flags );
-    fprintf( stderr, ", vkey=%08x", req->vkey );
+    SERVER_LOG( LOG_ALWAYS, " replaced=%d", req->replaced );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", vkey=%08x", req->vkey );
 }
 
 static void dump_unregister_hotkey_request( const struct unregister_hotkey_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
-    fprintf( stderr, ", id=%d", req->id );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, ", id=%d", req->id );
 }
 
 static void dump_unregister_hotkey_reply( const struct unregister_hotkey_reply *req )
 {
-    fprintf( stderr, " flags=%08x", req->flags );
-    fprintf( stderr, ", vkey=%08x", req->vkey );
+    SERVER_LOG( LOG_ALWAYS, " flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", vkey=%08x", req->vkey );
 }
 
 static void dump_attach_thread_input_request( const struct attach_thread_input_request *req )
 {
-    fprintf( stderr, " tid_from=%04x", req->tid_from );
-    fprintf( stderr, ", tid_to=%04x", req->tid_to );
-    fprintf( stderr, ", attach=%d", req->attach );
+    SERVER_LOG( LOG_ALWAYS, " tid_from=%04x", req->tid_from );
+    SERVER_LOG( LOG_ALWAYS, ", tid_to=%04x", req->tid_to );
+    SERVER_LOG( LOG_ALWAYS, ", attach=%d", req->attach );
 }
 
 static void dump_get_thread_input_request( const struct get_thread_input_request *req )
 {
-    fprintf( stderr, " tid=%04x", req->tid );
+    SERVER_LOG( LOG_ALWAYS, " tid=%04x", req->tid );
 }
 
 static void dump_get_thread_input_reply( const struct get_thread_input_reply *req )
 {
-    fprintf( stderr, " focus=%08x", req->focus );
-    fprintf( stderr, ", capture=%08x", req->capture );
-    fprintf( stderr, ", active=%08x", req->active );
-    fprintf( stderr, ", foreground=%08x", req->foreground );
-    fprintf( stderr, ", menu_owner=%08x", req->menu_owner );
-    fprintf( stderr, ", move_size=%08x", req->move_size );
-    fprintf( stderr, ", caret=%08x", req->caret );
-    fprintf( stderr, ", cursor=%08x", req->cursor );
-    fprintf( stderr, ", show_count=%d", req->show_count );
+    SERVER_LOG( LOG_ALWAYS, " focus=%08x", req->focus );
+    SERVER_LOG( LOG_ALWAYS, ", capture=%08x", req->capture );
+    SERVER_LOG( LOG_ALWAYS, ", active=%08x", req->active );
+    SERVER_LOG( LOG_ALWAYS, ", foreground=%08x", req->foreground );
+    SERVER_LOG( LOG_ALWAYS, ", menu_owner=%08x", req->menu_owner );
+    SERVER_LOG( LOG_ALWAYS, ", move_size=%08x", req->move_size );
+    SERVER_LOG( LOG_ALWAYS, ", caret=%08x", req->caret );
+    SERVER_LOG( LOG_ALWAYS, ", cursor=%08x", req->cursor );
+    SERVER_LOG( LOG_ALWAYS, ", show_count=%d", req->show_count );
     dump_rectangle( ", rect=", &req->rect );
 }
 
@@ -3443,202 +3443,202 @@ static void dump_get_last_input_time_request( const struct get_last_input_time_r
 
 static void dump_get_last_input_time_reply( const struct get_last_input_time_reply *req )
 {
-    fprintf( stderr, " time=%08x", req->time );
+    SERVER_LOG( LOG_ALWAYS, " time=%08x", req->time );
 }
 
 static void dump_get_key_state_request( const struct get_key_state_request *req )
 {
-    fprintf( stderr, " async=%d", req->async );
-    fprintf( stderr, ", key=%d", req->key );
+    SERVER_LOG( LOG_ALWAYS, " async=%d", req->async );
+    SERVER_LOG( LOG_ALWAYS, ", key=%d", req->key );
 }
 
 static void dump_get_key_state_reply( const struct get_key_state_reply *req )
 {
-    fprintf( stderr, " state=%02x", req->state );
+    SERVER_LOG( LOG_ALWAYS, " state=%02x", req->state );
     dump_varargs_bytes( ", keystate=", cur_size );
 }
 
 static void dump_set_key_state_request( const struct set_key_state_request *req )
 {
-    fprintf( stderr, " async=%d", req->async );
+    SERVER_LOG( LOG_ALWAYS, " async=%d", req->async );
     dump_varargs_bytes( ", keystate=", cur_size );
 }
 
 static void dump_set_foreground_window_request( const struct set_foreground_window_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
 }
 
 static void dump_set_foreground_window_reply( const struct set_foreground_window_reply *req )
 {
-    fprintf( stderr, " previous=%08x", req->previous );
-    fprintf( stderr, ", send_msg_old=%d", req->send_msg_old );
-    fprintf( stderr, ", send_msg_new=%d", req->send_msg_new );
+    SERVER_LOG( LOG_ALWAYS, " previous=%08x", req->previous );
+    SERVER_LOG( LOG_ALWAYS, ", send_msg_old=%d", req->send_msg_old );
+    SERVER_LOG( LOG_ALWAYS, ", send_msg_new=%d", req->send_msg_new );
 }
 
 static void dump_set_focus_window_request( const struct set_focus_window_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
 }
 
 static void dump_set_focus_window_reply( const struct set_focus_window_reply *req )
 {
-    fprintf( stderr, " previous=%08x", req->previous );
+    SERVER_LOG( LOG_ALWAYS, " previous=%08x", req->previous );
 }
 
 static void dump_set_active_window_request( const struct set_active_window_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
 }
 
 static void dump_set_active_window_reply( const struct set_active_window_reply *req )
 {
-    fprintf( stderr, " previous=%08x", req->previous );
+    SERVER_LOG( LOG_ALWAYS, " previous=%08x", req->previous );
 }
 
 static void dump_set_capture_window_request( const struct set_capture_window_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
-    fprintf( stderr, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
 }
 
 static void dump_set_capture_window_reply( const struct set_capture_window_reply *req )
 {
-    fprintf( stderr, " previous=%08x", req->previous );
-    fprintf( stderr, ", full_handle=%08x", req->full_handle );
+    SERVER_LOG( LOG_ALWAYS, " previous=%08x", req->previous );
+    SERVER_LOG( LOG_ALWAYS, ", full_handle=%08x", req->full_handle );
 }
 
 static void dump_set_caret_window_request( const struct set_caret_window_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
-    fprintf( stderr, ", width=%d", req->width );
-    fprintf( stderr, ", height=%d", req->height );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", width=%d", req->width );
+    SERVER_LOG( LOG_ALWAYS, ", height=%d", req->height );
 }
 
 static void dump_set_caret_window_reply( const struct set_caret_window_reply *req )
 {
-    fprintf( stderr, " previous=%08x", req->previous );
+    SERVER_LOG( LOG_ALWAYS, " previous=%08x", req->previous );
     dump_rectangle( ", old_rect=", &req->old_rect );
-    fprintf( stderr, ", old_hide=%d", req->old_hide );
-    fprintf( stderr, ", old_state=%d", req->old_state );
+    SERVER_LOG( LOG_ALWAYS, ", old_hide=%d", req->old_hide );
+    SERVER_LOG( LOG_ALWAYS, ", old_state=%d", req->old_state );
 }
 
 static void dump_set_caret_info_request( const struct set_caret_info_request *req )
 {
-    fprintf( stderr, " flags=%08x", req->flags );
-    fprintf( stderr, ", handle=%08x", req->handle );
-    fprintf( stderr, ", x=%d", req->x );
-    fprintf( stderr, ", y=%d", req->y );
-    fprintf( stderr, ", hide=%d", req->hide );
-    fprintf( stderr, ", state=%d", req->state );
+    SERVER_LOG( LOG_ALWAYS, " flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", x=%d", req->x );
+    SERVER_LOG( LOG_ALWAYS, ", y=%d", req->y );
+    SERVER_LOG( LOG_ALWAYS, ", hide=%d", req->hide );
+    SERVER_LOG( LOG_ALWAYS, ", state=%d", req->state );
 }
 
 static void dump_set_caret_info_reply( const struct set_caret_info_reply *req )
 {
-    fprintf( stderr, " full_handle=%08x", req->full_handle );
+    SERVER_LOG( LOG_ALWAYS, " full_handle=%08x", req->full_handle );
     dump_rectangle( ", old_rect=", &req->old_rect );
-    fprintf( stderr, ", old_hide=%d", req->old_hide );
-    fprintf( stderr, ", old_state=%d", req->old_state );
+    SERVER_LOG( LOG_ALWAYS, ", old_hide=%d", req->old_hide );
+    SERVER_LOG( LOG_ALWAYS, ", old_state=%d", req->old_state );
 }
 
 static void dump_set_hook_request( const struct set_hook_request *req )
 {
-    fprintf( stderr, " id=%d", req->id );
-    fprintf( stderr, ", pid=%04x", req->pid );
-    fprintf( stderr, ", tid=%04x", req->tid );
-    fprintf( stderr, ", event_min=%d", req->event_min );
-    fprintf( stderr, ", event_max=%d", req->event_max );
+    SERVER_LOG( LOG_ALWAYS, " id=%d", req->id );
+    SERVER_LOG( LOG_ALWAYS, ", pid=%04x", req->pid );
+    SERVER_LOG( LOG_ALWAYS, ", tid=%04x", req->tid );
+    SERVER_LOG( LOG_ALWAYS, ", event_min=%d", req->event_min );
+    SERVER_LOG( LOG_ALWAYS, ", event_max=%d", req->event_max );
     dump_uint64( ", proc=", &req->proc );
-    fprintf( stderr, ", flags=%d", req->flags );
-    fprintf( stderr, ", unicode=%d", req->unicode );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%d", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", unicode=%d", req->unicode );
     dump_varargs_unicode_str( ", module=", cur_size );
 }
 
 static void dump_set_hook_reply( const struct set_hook_reply *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
-    fprintf( stderr, ", active_hooks=%08x", req->active_hooks );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", active_hooks=%08x", req->active_hooks );
 }
 
 static void dump_remove_hook_request( const struct remove_hook_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
     dump_uint64( ", proc=", &req->proc );
-    fprintf( stderr, ", id=%d", req->id );
+    SERVER_LOG( LOG_ALWAYS, ", id=%d", req->id );
 }
 
 static void dump_remove_hook_reply( const struct remove_hook_reply *req )
 {
-    fprintf( stderr, " active_hooks=%08x", req->active_hooks );
+    SERVER_LOG( LOG_ALWAYS, " active_hooks=%08x", req->active_hooks );
 }
 
 static void dump_start_hook_chain_request( const struct start_hook_chain_request *req )
 {
-    fprintf( stderr, " id=%d", req->id );
-    fprintf( stderr, ", event=%d", req->event );
-    fprintf( stderr, ", window=%08x", req->window );
-    fprintf( stderr, ", object_id=%d", req->object_id );
-    fprintf( stderr, ", child_id=%d", req->child_id );
+    SERVER_LOG( LOG_ALWAYS, " id=%d", req->id );
+    SERVER_LOG( LOG_ALWAYS, ", event=%d", req->event );
+    SERVER_LOG( LOG_ALWAYS, ", window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, ", object_id=%d", req->object_id );
+    SERVER_LOG( LOG_ALWAYS, ", child_id=%d", req->child_id );
 }
 
 static void dump_start_hook_chain_reply( const struct start_hook_chain_reply *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
-    fprintf( stderr, ", pid=%04x", req->pid );
-    fprintf( stderr, ", tid=%04x", req->tid );
-    fprintf( stderr, ", unicode=%d", req->unicode );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", pid=%04x", req->pid );
+    SERVER_LOG( LOG_ALWAYS, ", tid=%04x", req->tid );
+    SERVER_LOG( LOG_ALWAYS, ", unicode=%d", req->unicode );
     dump_uint64( ", proc=", &req->proc );
-    fprintf( stderr, ", active_hooks=%08x", req->active_hooks );
+    SERVER_LOG( LOG_ALWAYS, ", active_hooks=%08x", req->active_hooks );
     dump_varargs_unicode_str( ", module=", cur_size );
 }
 
 static void dump_finish_hook_chain_request( const struct finish_hook_chain_request *req )
 {
-    fprintf( stderr, " id=%d", req->id );
+    SERVER_LOG( LOG_ALWAYS, " id=%d", req->id );
 }
 
 static void dump_get_hook_info_request( const struct get_hook_info_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
-    fprintf( stderr, ", get_next=%d", req->get_next );
-    fprintf( stderr, ", event=%d", req->event );
-    fprintf( stderr, ", window=%08x", req->window );
-    fprintf( stderr, ", object_id=%d", req->object_id );
-    fprintf( stderr, ", child_id=%d", req->child_id );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", get_next=%d", req->get_next );
+    SERVER_LOG( LOG_ALWAYS, ", event=%d", req->event );
+    SERVER_LOG( LOG_ALWAYS, ", window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, ", object_id=%d", req->object_id );
+    SERVER_LOG( LOG_ALWAYS, ", child_id=%d", req->child_id );
 }
 
 static void dump_get_hook_info_reply( const struct get_hook_info_reply *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
-    fprintf( stderr, ", id=%d", req->id );
-    fprintf( stderr, ", pid=%04x", req->pid );
-    fprintf( stderr, ", tid=%04x", req->tid );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", id=%d", req->id );
+    SERVER_LOG( LOG_ALWAYS, ", pid=%04x", req->pid );
+    SERVER_LOG( LOG_ALWAYS, ", tid=%04x", req->tid );
     dump_uint64( ", proc=", &req->proc );
-    fprintf( stderr, ", unicode=%d", req->unicode );
+    SERVER_LOG( LOG_ALWAYS, ", unicode=%d", req->unicode );
     dump_varargs_unicode_str( ", module=", cur_size );
 }
 
 static void dump_create_class_request( const struct create_class_request *req )
 {
-    fprintf( stderr, " local=%d", req->local );
-    fprintf( stderr, ", atom=%04x", req->atom );
-    fprintf( stderr, ", style=%08x", req->style );
+    SERVER_LOG( LOG_ALWAYS, " local=%d", req->local );
+    SERVER_LOG( LOG_ALWAYS, ", atom=%04x", req->atom );
+    SERVER_LOG( LOG_ALWAYS, ", style=%08x", req->style );
     dump_uint64( ", instance=", &req->instance );
-    fprintf( stderr, ", extra=%d", req->extra );
-    fprintf( stderr, ", win_extra=%d", req->win_extra );
+    SERVER_LOG( LOG_ALWAYS, ", extra=%d", req->extra );
+    SERVER_LOG( LOG_ALWAYS, ", win_extra=%d", req->win_extra );
     dump_uint64( ", client_ptr=", &req->client_ptr );
-    fprintf( stderr, ", name_offset=%u", req->name_offset );
+    SERVER_LOG( LOG_ALWAYS, ", name_offset=%u", req->name_offset );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_create_class_reply( const struct create_class_reply *req )
 {
-    fprintf( stderr, " atom=%04x", req->atom );
+    SERVER_LOG( LOG_ALWAYS, " atom=%04x", req->atom );
 }
 
 static void dump_destroy_class_request( const struct destroy_class_request *req )
 {
-    fprintf( stderr, " atom=%04x", req->atom );
+    SERVER_LOG( LOG_ALWAYS, " atom=%04x", req->atom );
     dump_uint64( ", instance=", &req->instance );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
@@ -3650,36 +3650,36 @@ static void dump_destroy_class_reply( const struct destroy_class_reply *req )
 
 static void dump_set_class_info_request( const struct set_class_info_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
-    fprintf( stderr, ", flags=%08x", req->flags );
-    fprintf( stderr, ", atom=%04x", req->atom );
-    fprintf( stderr, ", style=%08x", req->style );
-    fprintf( stderr, ", win_extra=%d", req->win_extra );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", atom=%04x", req->atom );
+    SERVER_LOG( LOG_ALWAYS, ", style=%08x", req->style );
+    SERVER_LOG( LOG_ALWAYS, ", win_extra=%d", req->win_extra );
     dump_uint64( ", instance=", &req->instance );
-    fprintf( stderr, ", extra_offset=%d", req->extra_offset );
-    fprintf( stderr, ", extra_size=%u", req->extra_size );
+    SERVER_LOG( LOG_ALWAYS, ", extra_offset=%d", req->extra_offset );
+    SERVER_LOG( LOG_ALWAYS, ", extra_size=%u", req->extra_size );
     dump_uint64( ", extra_value=", &req->extra_value );
 }
 
 static void dump_set_class_info_reply( const struct set_class_info_reply *req )
 {
-    fprintf( stderr, " old_atom=%04x", req->old_atom );
-    fprintf( stderr, ", base_atom=%04x", req->base_atom );
+    SERVER_LOG( LOG_ALWAYS, " old_atom=%04x", req->old_atom );
+    SERVER_LOG( LOG_ALWAYS, ", base_atom=%04x", req->base_atom );
     dump_uint64( ", old_instance=", &req->old_instance );
     dump_uint64( ", old_extra_value=", &req->old_extra_value );
-    fprintf( stderr, ", old_style=%08x", req->old_style );
-    fprintf( stderr, ", old_extra=%d", req->old_extra );
-    fprintf( stderr, ", old_win_extra=%d", req->old_win_extra );
+    SERVER_LOG( LOG_ALWAYS, ", old_style=%08x", req->old_style );
+    SERVER_LOG( LOG_ALWAYS, ", old_extra=%d", req->old_extra );
+    SERVER_LOG( LOG_ALWAYS, ", old_win_extra=%d", req->old_win_extra );
 }
 
 static void dump_open_clipboard_request( const struct open_clipboard_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
 }
 
 static void dump_open_clipboard_reply( const struct open_clipboard_reply *req )
 {
-    fprintf( stderr, " owner=%08x", req->owner );
+    SERVER_LOG( LOG_ALWAYS, " owner=%08x", req->owner );
 }
 
 static void dump_close_clipboard_request( const struct close_clipboard_request *req )
@@ -3688,8 +3688,8 @@ static void dump_close_clipboard_request( const struct close_clipboard_request *
 
 static void dump_close_clipboard_reply( const struct close_clipboard_reply *req )
 {
-    fprintf( stderr, " viewer=%08x", req->viewer );
-    fprintf( stderr, ", owner=%08x", req->owner );
+    SERVER_LOG( LOG_ALWAYS, " viewer=%08x", req->viewer );
+    SERVER_LOG( LOG_ALWAYS, ", owner=%08x", req->owner );
 }
 
 static void dump_empty_clipboard_request( const struct empty_clipboard_request *req )
@@ -3698,63 +3698,63 @@ static void dump_empty_clipboard_request( const struct empty_clipboard_request *
 
 static void dump_set_clipboard_data_request( const struct set_clipboard_data_request *req )
 {
-    fprintf( stderr, " format=%08x", req->format );
-    fprintf( stderr, ", lcid=%08x", req->lcid );
+    SERVER_LOG( LOG_ALWAYS, " format=%08x", req->format );
+    SERVER_LOG( LOG_ALWAYS, ", lcid=%08x", req->lcid );
     dump_varargs_bytes( ", data=", cur_size );
 }
 
 static void dump_set_clipboard_data_reply( const struct set_clipboard_data_reply *req )
 {
-    fprintf( stderr, " seqno=%08x", req->seqno );
+    SERVER_LOG( LOG_ALWAYS, " seqno=%08x", req->seqno );
 }
 
 static void dump_get_clipboard_data_request( const struct get_clipboard_data_request *req )
 {
-    fprintf( stderr, " format=%08x", req->format );
-    fprintf( stderr, ", render=%d", req->render );
-    fprintf( stderr, ", cached=%d", req->cached );
-    fprintf( stderr, ", seqno=%08x", req->seqno );
+    SERVER_LOG( LOG_ALWAYS, " format=%08x", req->format );
+    SERVER_LOG( LOG_ALWAYS, ", render=%d", req->render );
+    SERVER_LOG( LOG_ALWAYS, ", cached=%d", req->cached );
+    SERVER_LOG( LOG_ALWAYS, ", seqno=%08x", req->seqno );
 }
 
 static void dump_get_clipboard_data_reply( const struct get_clipboard_data_reply *req )
 {
-    fprintf( stderr, " from=%08x", req->from );
-    fprintf( stderr, ", owner=%08x", req->owner );
-    fprintf( stderr, ", seqno=%08x", req->seqno );
-    fprintf( stderr, ", total=%u", req->total );
+    SERVER_LOG( LOG_ALWAYS, " from=%08x", req->from );
+    SERVER_LOG( LOG_ALWAYS, ", owner=%08x", req->owner );
+    SERVER_LOG( LOG_ALWAYS, ", seqno=%08x", req->seqno );
+    SERVER_LOG( LOG_ALWAYS, ", total=%u", req->total );
     dump_varargs_bytes( ", data=", cur_size );
 }
 
 static void dump_get_clipboard_formats_request( const struct get_clipboard_formats_request *req )
 {
-    fprintf( stderr, " format=%08x", req->format );
+    SERVER_LOG( LOG_ALWAYS, " format=%08x", req->format );
 }
 
 static void dump_get_clipboard_formats_reply( const struct get_clipboard_formats_reply *req )
 {
-    fprintf( stderr, " count=%08x", req->count );
+    SERVER_LOG( LOG_ALWAYS, " count=%08x", req->count );
     dump_varargs_uints( ", formats=", cur_size );
 }
 
 static void dump_enum_clipboard_formats_request( const struct enum_clipboard_formats_request *req )
 {
-    fprintf( stderr, " previous=%08x", req->previous );
+    SERVER_LOG( LOG_ALWAYS, " previous=%08x", req->previous );
 }
 
 static void dump_enum_clipboard_formats_reply( const struct enum_clipboard_formats_reply *req )
 {
-    fprintf( stderr, " format=%08x", req->format );
+    SERVER_LOG( LOG_ALWAYS, " format=%08x", req->format );
 }
 
 static void dump_release_clipboard_request( const struct release_clipboard_request *req )
 {
-    fprintf( stderr, " owner=%08x", req->owner );
+    SERVER_LOG( LOG_ALWAYS, " owner=%08x", req->owner );
 }
 
 static void dump_release_clipboard_reply( const struct release_clipboard_reply *req )
 {
-    fprintf( stderr, " viewer=%08x", req->viewer );
-    fprintf( stderr, ", owner=%08x", req->owner );
+    SERVER_LOG( LOG_ALWAYS, " viewer=%08x", req->viewer );
+    SERVER_LOG( LOG_ALWAYS, ", owner=%08x", req->owner );
 }
 
 static void dump_get_clipboard_info_request( const struct get_clipboard_info_request *req )
@@ -3763,202 +3763,202 @@ static void dump_get_clipboard_info_request( const struct get_clipboard_info_req
 
 static void dump_get_clipboard_info_reply( const struct get_clipboard_info_reply *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
-    fprintf( stderr, ", owner=%08x", req->owner );
-    fprintf( stderr, ", viewer=%08x", req->viewer );
-    fprintf( stderr, ", seqno=%08x", req->seqno );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, ", owner=%08x", req->owner );
+    SERVER_LOG( LOG_ALWAYS, ", viewer=%08x", req->viewer );
+    SERVER_LOG( LOG_ALWAYS, ", seqno=%08x", req->seqno );
 }
 
 static void dump_set_clipboard_viewer_request( const struct set_clipboard_viewer_request *req )
 {
-    fprintf( stderr, " viewer=%08x", req->viewer );
-    fprintf( stderr, ", previous=%08x", req->previous );
+    SERVER_LOG( LOG_ALWAYS, " viewer=%08x", req->viewer );
+    SERVER_LOG( LOG_ALWAYS, ", previous=%08x", req->previous );
 }
 
 static void dump_set_clipboard_viewer_reply( const struct set_clipboard_viewer_reply *req )
 {
-    fprintf( stderr, " old_viewer=%08x", req->old_viewer );
-    fprintf( stderr, ", owner=%08x", req->owner );
+    SERVER_LOG( LOG_ALWAYS, " old_viewer=%08x", req->old_viewer );
+    SERVER_LOG( LOG_ALWAYS, ", owner=%08x", req->owner );
 }
 
 static void dump_add_clipboard_listener_request( const struct add_clipboard_listener_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
 }
 
 static void dump_remove_clipboard_listener_request( const struct remove_clipboard_listener_request *req )
 {
-    fprintf( stderr, " window=%08x", req->window );
+    SERVER_LOG( LOG_ALWAYS, " window=%08x", req->window );
 }
 
 static void dump_open_token_request( const struct open_token_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
 }
 
 static void dump_open_token_reply( const struct open_token_reply *req )
 {
-    fprintf( stderr, " token=%04x", req->token );
+    SERVER_LOG( LOG_ALWAYS, " token=%04x", req->token );
 }
 
 static void dump_set_global_windows_request( const struct set_global_windows_request *req )
 {
-    fprintf( stderr, " flags=%08x", req->flags );
-    fprintf( stderr, ", shell_window=%08x", req->shell_window );
-    fprintf( stderr, ", shell_listview=%08x", req->shell_listview );
-    fprintf( stderr, ", progman_window=%08x", req->progman_window );
-    fprintf( stderr, ", taskman_window=%08x", req->taskman_window );
+    SERVER_LOG( LOG_ALWAYS, " flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", shell_window=%08x", req->shell_window );
+    SERVER_LOG( LOG_ALWAYS, ", shell_listview=%08x", req->shell_listview );
+    SERVER_LOG( LOG_ALWAYS, ", progman_window=%08x", req->progman_window );
+    SERVER_LOG( LOG_ALWAYS, ", taskman_window=%08x", req->taskman_window );
 }
 
 static void dump_set_global_windows_reply( const struct set_global_windows_reply *req )
 {
-    fprintf( stderr, " old_shell_window=%08x", req->old_shell_window );
-    fprintf( stderr, ", old_shell_listview=%08x", req->old_shell_listview );
-    fprintf( stderr, ", old_progman_window=%08x", req->old_progman_window );
-    fprintf( stderr, ", old_taskman_window=%08x", req->old_taskman_window );
+    SERVER_LOG( LOG_ALWAYS, " old_shell_window=%08x", req->old_shell_window );
+    SERVER_LOG( LOG_ALWAYS, ", old_shell_listview=%08x", req->old_shell_listview );
+    SERVER_LOG( LOG_ALWAYS, ", old_progman_window=%08x", req->old_progman_window );
+    SERVER_LOG( LOG_ALWAYS, ", old_taskman_window=%08x", req->old_taskman_window );
 }
 
 static void dump_adjust_token_privileges_request( const struct adjust_token_privileges_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", disable_all=%d", req->disable_all );
-    fprintf( stderr, ", get_modified_state=%d", req->get_modified_state );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", disable_all=%d", req->disable_all );
+    SERVER_LOG( LOG_ALWAYS, ", get_modified_state=%d", req->get_modified_state );
     dump_varargs_LUID_AND_ATTRIBUTES( ", privileges=", cur_size );
 }
 
 static void dump_adjust_token_privileges_reply( const struct adjust_token_privileges_reply *req )
 {
-    fprintf( stderr, " len=%08x", req->len );
+    SERVER_LOG( LOG_ALWAYS, " len=%08x", req->len );
     dump_varargs_LUID_AND_ATTRIBUTES( ", privileges=", cur_size );
 }
 
 static void dump_get_token_privileges_request( const struct get_token_privileges_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_token_privileges_reply( const struct get_token_privileges_reply *req )
 {
-    fprintf( stderr, " len=%08x", req->len );
+    SERVER_LOG( LOG_ALWAYS, " len=%08x", req->len );
     dump_varargs_LUID_AND_ATTRIBUTES( ", privileges=", cur_size );
 }
 
 static void dump_check_token_privileges_request( const struct check_token_privileges_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", all_required=%d", req->all_required );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", all_required=%d", req->all_required );
     dump_varargs_LUID_AND_ATTRIBUTES( ", privileges=", cur_size );
 }
 
 static void dump_check_token_privileges_reply( const struct check_token_privileges_reply *req )
 {
-    fprintf( stderr, " has_privileges=%d", req->has_privileges );
+    SERVER_LOG( LOG_ALWAYS, " has_privileges=%d", req->has_privileges );
     dump_varargs_LUID_AND_ATTRIBUTES( ", privileges=", cur_size );
 }
 
 static void dump_duplicate_token_request( const struct duplicate_token_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", access=%08x", req->access );
-    fprintf( stderr, ", primary=%d", req->primary );
-    fprintf( stderr, ", impersonation_level=%d", req->impersonation_level );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", primary=%d", req->primary );
+    SERVER_LOG( LOG_ALWAYS, ", impersonation_level=%d", req->impersonation_level );
     dump_varargs_object_attributes( ", objattr=", cur_size );
 }
 
 static void dump_duplicate_token_reply( const struct duplicate_token_reply *req )
 {
-    fprintf( stderr, " new_handle=%04x", req->new_handle );
+    SERVER_LOG( LOG_ALWAYS, " new_handle=%04x", req->new_handle );
 }
 
 static void dump_filter_token_request( const struct filter_token_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", flags=%08x", req->flags );
-    fprintf( stderr, ", privileges_size=%u", req->privileges_size );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", privileges_size=%u", req->privileges_size );
     dump_varargs_LUID_AND_ATTRIBUTES( ", privileges=", min(cur_size,req->privileges_size) );
     dump_varargs_SID( ", disable_sids=", cur_size );
 }
 
 static void dump_filter_token_reply( const struct filter_token_reply *req )
 {
-    fprintf( stderr, " new_handle=%04x", req->new_handle );
+    SERVER_LOG( LOG_ALWAYS, " new_handle=%04x", req->new_handle );
 }
 
 static void dump_access_check_request( const struct access_check_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", desired_access=%08x", req->desired_access );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", desired_access=%08x", req->desired_access );
     dump_generic_map( ", mapping=", &req->mapping );
     dump_varargs_security_descriptor( ", sd=", cur_size );
 }
 
 static void dump_access_check_reply( const struct access_check_reply *req )
 {
-    fprintf( stderr, " access_granted=%08x", req->access_granted );
-    fprintf( stderr, ", access_status=%08x", req->access_status );
-    fprintf( stderr, ", privileges_len=%08x", req->privileges_len );
+    SERVER_LOG( LOG_ALWAYS, " access_granted=%08x", req->access_granted );
+    SERVER_LOG( LOG_ALWAYS, ", access_status=%08x", req->access_status );
+    SERVER_LOG( LOG_ALWAYS, ", privileges_len=%08x", req->privileges_len );
     dump_varargs_LUID_AND_ATTRIBUTES( ", privileges=", cur_size );
 }
 
 static void dump_get_token_sid_request( const struct get_token_sid_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", which_sid=%08x", req->which_sid );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", which_sid=%08x", req->which_sid );
 }
 
 static void dump_get_token_sid_reply( const struct get_token_sid_reply *req )
 {
-    fprintf( stderr, " sid_len=%u", req->sid_len );
+    SERVER_LOG( LOG_ALWAYS, " sid_len=%u", req->sid_len );
     dump_varargs_SID( ", sid=", cur_size );
 }
 
 static void dump_get_token_groups_request( const struct get_token_groups_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_token_groups_reply( const struct get_token_groups_reply *req )
 {
-    fprintf( stderr, " user_len=%u", req->user_len );
+    SERVER_LOG( LOG_ALWAYS, " user_len=%u", req->user_len );
     dump_varargs_token_groups( ", user=", cur_size );
 }
 
 static void dump_get_token_default_dacl_request( const struct get_token_default_dacl_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_token_default_dacl_reply( const struct get_token_default_dacl_reply *req )
 {
-    fprintf( stderr, " acl_len=%u", req->acl_len );
+    SERVER_LOG( LOG_ALWAYS, " acl_len=%u", req->acl_len );
     dump_varargs_ACL( ", acl=", cur_size );
 }
 
 static void dump_set_token_default_dacl_request( const struct set_token_default_dacl_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
     dump_varargs_ACL( ", acl=", cur_size );
 }
 
 static void dump_set_security_object_request( const struct set_security_object_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", security_info=%08x", req->security_info );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", security_info=%08x", req->security_info );
     dump_varargs_security_descriptor( ", sd=", cur_size );
 }
 
 static void dump_get_security_object_request( const struct get_security_object_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", security_info=%08x", req->security_info );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", security_info=%08x", req->security_info );
 }
 
 static void dump_get_security_object_reply( const struct get_security_object_reply *req )
 {
-    fprintf( stderr, " sd_len=%08x", req->sd_len );
+    SERVER_LOG( LOG_ALWAYS, " sd_len=%08x", req->sd_len );
     dump_varargs_security_descriptor( ", sd=", cur_size );
 }
 
@@ -3968,135 +3968,135 @@ static void dump_get_system_handles_request( const struct get_system_handles_req
 
 static void dump_get_system_handles_reply( const struct get_system_handles_reply *req )
 {
-    fprintf( stderr, " count=%08x", req->count );
+    SERVER_LOG( LOG_ALWAYS, " count=%08x", req->count );
     dump_varargs_handle_infos( ", data=", cur_size );
 }
 
 static void dump_create_mailslot_request( const struct create_mailslot_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
     dump_timeout( ", read_timeout=", &req->read_timeout );
-    fprintf( stderr, ", max_msgsize=%08x", req->max_msgsize );
+    SERVER_LOG( LOG_ALWAYS, ", max_msgsize=%08x", req->max_msgsize );
     dump_varargs_object_attributes( ", objattr=", cur_size );
 }
 
 static void dump_create_mailslot_reply( const struct create_mailslot_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_set_mailslot_info_request( const struct set_mailslot_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
     dump_timeout( ", read_timeout=", &req->read_timeout );
-    fprintf( stderr, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
 }
 
 static void dump_set_mailslot_info_reply( const struct set_mailslot_info_reply *req )
 {
     dump_timeout( " read_timeout=", &req->read_timeout );
-    fprintf( stderr, ", max_msgsize=%08x", req->max_msgsize );
+    SERVER_LOG( LOG_ALWAYS, ", max_msgsize=%08x", req->max_msgsize );
 }
 
 static void dump_create_directory_request( const struct create_directory_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
     dump_varargs_object_attributes( ", objattr=", cur_size );
 }
 
 static void dump_create_directory_reply( const struct create_directory_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_open_directory_request( const struct open_directory_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", rootdir=%04x", req->rootdir );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", rootdir=%04x", req->rootdir );
     dump_varargs_unicode_str( ", directory_name=", cur_size );
 }
 
 static void dump_open_directory_reply( const struct open_directory_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_directory_entry_request( const struct get_directory_entry_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", index=%08x", req->index );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", index=%08x", req->index );
 }
 
 static void dump_get_directory_entry_reply( const struct get_directory_entry_reply *req )
 {
-    fprintf( stderr, " name_len=%u", req->name_len );
+    SERVER_LOG( LOG_ALWAYS, " name_len=%u", req->name_len );
     dump_varargs_unicode_str( ", name=", min(cur_size,req->name_len) );
     dump_varargs_unicode_str( ", type=", cur_size );
 }
 
 static void dump_create_symlink_request( const struct create_symlink_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
     dump_varargs_object_attributes( ", objattr=", cur_size );
     dump_varargs_unicode_str( ", target_name=", cur_size );
 }
 
 static void dump_create_symlink_reply( const struct create_symlink_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_open_symlink_request( const struct open_symlink_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", rootdir=%04x", req->rootdir );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", rootdir=%04x", req->rootdir );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_open_symlink_reply( const struct open_symlink_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_query_symlink_request( const struct query_symlink_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_query_symlink_reply( const struct query_symlink_reply *req )
 {
-    fprintf( stderr, " total=%u", req->total );
+    SERVER_LOG( LOG_ALWAYS, " total=%u", req->total );
     dump_varargs_unicode_str( ", target_name=", cur_size );
 }
 
 static void dump_get_object_info_request( const struct get_object_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_object_info_reply( const struct get_object_info_reply *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", ref_count=%08x", req->ref_count );
-    fprintf( stderr, ", handle_count=%08x", req->handle_count );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", ref_count=%08x", req->ref_count );
+    SERVER_LOG( LOG_ALWAYS, ", handle_count=%08x", req->handle_count );
 }
 
 static void dump_get_object_name_request( const struct get_object_name_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_object_name_reply( const struct get_object_name_reply *req )
 {
-    fprintf( stderr, " total=%u", req->total );
+    SERVER_LOG( LOG_ALWAYS, " total=%u", req->total );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_get_object_type_request( const struct get_object_type_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_object_type_reply( const struct get_object_type_reply *req )
@@ -4110,7 +4110,7 @@ static void dump_get_object_types_request( const struct get_object_types_request
 
 static void dump_get_object_types_reply( const struct get_object_types_reply *req )
 {
-    fprintf( stderr, " count=%d", req->count );
+    SERVER_LOG( LOG_ALWAYS, " count=%d", req->count );
     dump_varargs_object_types_info( ", info=", cur_size );
 }
 
@@ -4125,55 +4125,55 @@ static void dump_allocate_locally_unique_id_reply( const struct allocate_locally
 
 static void dump_create_device_manager_request( const struct create_device_manager_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
 }
 
 static void dump_create_device_manager_reply( const struct create_device_manager_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_create_device_request( const struct create_device_request *req )
 {
-    fprintf( stderr, " rootdir=%04x", req->rootdir );
+    SERVER_LOG( LOG_ALWAYS, " rootdir=%04x", req->rootdir );
     dump_uint64( ", user_ptr=", &req->user_ptr );
-    fprintf( stderr, ", manager=%04x", req->manager );
+    SERVER_LOG( LOG_ALWAYS, ", manager=%04x", req->manager );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_delete_device_request( const struct delete_device_request *req )
 {
-    fprintf( stderr, " manager=%04x", req->manager );
+    SERVER_LOG( LOG_ALWAYS, " manager=%04x", req->manager );
     dump_uint64( ", device=", &req->device );
 }
 
 static void dump_get_next_device_request_request( const struct get_next_device_request_request *req )
 {
-    fprintf( stderr, " manager=%04x", req->manager );
-    fprintf( stderr, ", prev=%04x", req->prev );
-    fprintf( stderr, ", status=%08x", req->status );
+    SERVER_LOG( LOG_ALWAYS, " manager=%04x", req->manager );
+    SERVER_LOG( LOG_ALWAYS, ", prev=%04x", req->prev );
+    SERVER_LOG( LOG_ALWAYS, ", status=%08x", req->status );
     dump_uint64( ", user_ptr=", &req->user_ptr );
-    fprintf( stderr, ", pending=%d", req->pending );
-    fprintf( stderr, ", iosb_status=%08x", req->iosb_status );
-    fprintf( stderr, ", result=%u", req->result );
+    SERVER_LOG( LOG_ALWAYS, ", pending=%d", req->pending );
+    SERVER_LOG( LOG_ALWAYS, ", iosb_status=%08x", req->iosb_status );
+    SERVER_LOG( LOG_ALWAYS, ", result=%u", req->result );
     dump_varargs_bytes( ", data=", cur_size );
 }
 
 static void dump_get_next_device_request_reply( const struct get_next_device_request_reply *req )
 {
     dump_irp_params( " params=", &req->params );
-    fprintf( stderr, ", next=%04x", req->next );
-    fprintf( stderr, ", client_tid=%04x", req->client_tid );
+    SERVER_LOG( LOG_ALWAYS, ", next=%04x", req->next );
+    SERVER_LOG( LOG_ALWAYS, ", client_tid=%04x", req->client_tid );
     dump_uint64( ", client_thread=", &req->client_thread );
-    fprintf( stderr, ", in_size=%u", req->in_size );
+    SERVER_LOG( LOG_ALWAYS, ", in_size=%u", req->in_size );
     dump_varargs_bytes( ", next_data=", cur_size );
 }
 
 static void dump_get_kernel_object_ptr_request( const struct get_kernel_object_ptr_request *req )
 {
-    fprintf( stderr, " manager=%04x", req->manager );
-    fprintf( stderr, ", handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " manager=%04x", req->manager );
+    SERVER_LOG( LOG_ALWAYS, ", handle=%04x", req->handle );
 }
 
 static void dump_get_kernel_object_ptr_reply( const struct get_kernel_object_ptr_reply *req )
@@ -4183,109 +4183,109 @@ static void dump_get_kernel_object_ptr_reply( const struct get_kernel_object_ptr
 
 static void dump_set_kernel_object_ptr_request( const struct set_kernel_object_ptr_request *req )
 {
-    fprintf( stderr, " manager=%04x", req->manager );
-    fprintf( stderr, ", handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " manager=%04x", req->manager );
+    SERVER_LOG( LOG_ALWAYS, ", handle=%04x", req->handle );
     dump_uint64( ", user_ptr=", &req->user_ptr );
 }
 
 static void dump_grab_kernel_object_request( const struct grab_kernel_object_request *req )
 {
-    fprintf( stderr, " manager=%04x", req->manager );
+    SERVER_LOG( LOG_ALWAYS, " manager=%04x", req->manager );
     dump_uint64( ", user_ptr=", &req->user_ptr );
 }
 
 static void dump_release_kernel_object_request( const struct release_kernel_object_request *req )
 {
-    fprintf( stderr, " manager=%04x", req->manager );
+    SERVER_LOG( LOG_ALWAYS, " manager=%04x", req->manager );
     dump_uint64( ", user_ptr=", &req->user_ptr );
 }
 
 static void dump_get_kernel_object_handle_request( const struct get_kernel_object_handle_request *req )
 {
-    fprintf( stderr, " manager=%04x", req->manager );
+    SERVER_LOG( LOG_ALWAYS, " manager=%04x", req->manager );
     dump_uint64( ", user_ptr=", &req->user_ptr );
-    fprintf( stderr, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
 }
 
 static void dump_get_kernel_object_handle_reply( const struct get_kernel_object_handle_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_make_process_system_request( const struct make_process_system_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_make_process_system_reply( const struct make_process_system_reply *req )
 {
-    fprintf( stderr, " event=%04x", req->event );
+    SERVER_LOG( LOG_ALWAYS, " event=%04x", req->event );
 }
 
 static void dump_get_token_info_request( const struct get_token_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_token_info_reply( const struct get_token_info_reply *req )
 {
     dump_luid( " token_id=", &req->token_id );
     dump_luid( ", modified_id=", &req->modified_id );
-    fprintf( stderr, ", session_id=%08x", req->session_id );
-    fprintf( stderr, ", primary=%d", req->primary );
-    fprintf( stderr, ", impersonation_level=%d", req->impersonation_level );
-    fprintf( stderr, ", elevation=%d", req->elevation );
-    fprintf( stderr, ", group_count=%d", req->group_count );
-    fprintf( stderr, ", privilege_count=%d", req->privilege_count );
+    SERVER_LOG( LOG_ALWAYS, ", session_id=%08x", req->session_id );
+    SERVER_LOG( LOG_ALWAYS, ", primary=%d", req->primary );
+    SERVER_LOG( LOG_ALWAYS, ", impersonation_level=%d", req->impersonation_level );
+    SERVER_LOG( LOG_ALWAYS, ", elevation=%d", req->elevation );
+    SERVER_LOG( LOG_ALWAYS, ", group_count=%d", req->group_count );
+    SERVER_LOG( LOG_ALWAYS, ", privilege_count=%d", req->privilege_count );
 }
 
 static void dump_create_linked_token_request( const struct create_linked_token_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_create_linked_token_reply( const struct create_linked_token_reply *req )
 {
-    fprintf( stderr, " linked=%04x", req->linked );
+    SERVER_LOG( LOG_ALWAYS, " linked=%04x", req->linked );
 }
 
 static void dump_create_completion_request( const struct create_completion_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", concurrent=%08x", req->concurrent );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", concurrent=%08x", req->concurrent );
     dump_varargs_object_attributes( ", objattr=", cur_size );
 }
 
 static void dump_create_completion_reply( const struct create_completion_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_open_completion_request( const struct open_completion_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", rootdir=%04x", req->rootdir );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", rootdir=%04x", req->rootdir );
     dump_varargs_unicode_str( ", filename=", cur_size );
 }
 
 static void dump_open_completion_reply( const struct open_completion_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_add_completion_request( const struct add_completion_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
     dump_uint64( ", ckey=", &req->ckey );
     dump_uint64( ", cvalue=", &req->cvalue );
     dump_uint64( ", information=", &req->information );
-    fprintf( stderr, ", status=%08x", req->status );
+    SERVER_LOG( LOG_ALWAYS, ", status=%08x", req->status );
 }
 
 static void dump_remove_completion_request( const struct remove_completion_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_remove_completion_reply( const struct remove_completion_reply *req )
@@ -4293,82 +4293,82 @@ static void dump_remove_completion_reply( const struct remove_completion_reply *
     dump_uint64( " ckey=", &req->ckey );
     dump_uint64( ", cvalue=", &req->cvalue );
     dump_uint64( ", information=", &req->information );
-    fprintf( stderr, ", status=%08x", req->status );
+    SERVER_LOG( LOG_ALWAYS, ", status=%08x", req->status );
 }
 
 static void dump_query_completion_request( const struct query_completion_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_query_completion_reply( const struct query_completion_reply *req )
 {
-    fprintf( stderr, " depth=%08x", req->depth );
+    SERVER_LOG( LOG_ALWAYS, " depth=%08x", req->depth );
 }
 
 static void dump_set_completion_info_request( const struct set_completion_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
     dump_uint64( ", ckey=", &req->ckey );
-    fprintf( stderr, ", chandle=%04x", req->chandle );
+    SERVER_LOG( LOG_ALWAYS, ", chandle=%04x", req->chandle );
 }
 
 static void dump_add_fd_completion_request( const struct add_fd_completion_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
     dump_uint64( ", cvalue=", &req->cvalue );
     dump_uint64( ", information=", &req->information );
-    fprintf( stderr, ", status=%08x", req->status );
-    fprintf( stderr, ", async=%d", req->async );
+    SERVER_LOG( LOG_ALWAYS, ", status=%08x", req->status );
+    SERVER_LOG( LOG_ALWAYS, ", async=%d", req->async );
 }
 
 static void dump_set_fd_completion_mode_request( const struct set_fd_completion_mode_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
 }
 
 static void dump_set_fd_disp_info_request( const struct set_fd_disp_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", unlink=%d", req->unlink );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", unlink=%d", req->unlink );
 }
 
 static void dump_set_fd_name_info_request( const struct set_fd_name_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", rootdir=%04x", req->rootdir );
-    fprintf( stderr, ", namelen=%u", req->namelen );
-    fprintf( stderr, ", link=%d", req->link );
-    fprintf( stderr, ", replace=%d", req->replace );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", rootdir=%04x", req->rootdir );
+    SERVER_LOG( LOG_ALWAYS, ", namelen=%u", req->namelen );
+    SERVER_LOG( LOG_ALWAYS, ", link=%d", req->link );
+    SERVER_LOG( LOG_ALWAYS, ", replace=%d", req->replace );
     dump_varargs_unicode_str( ", name=", min(cur_size,req->namelen) );
     dump_varargs_string( ", filename=", cur_size );
 }
 
 static void dump_set_fd_eof_info_request( const struct set_fd_eof_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
     dump_uint64( ", eof=", &req->eof );
 }
 
 static void dump_get_window_layered_info_request( const struct get_window_layered_info_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
 }
 
 static void dump_get_window_layered_info_reply( const struct get_window_layered_info_reply *req )
 {
-    fprintf( stderr, " color_key=%08x", req->color_key );
-    fprintf( stderr, ", alpha=%08x", req->alpha );
-    fprintf( stderr, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " color_key=%08x", req->color_key );
+    SERVER_LOG( LOG_ALWAYS, ", alpha=%08x", req->alpha );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
 }
 
 static void dump_set_window_layered_info_request( const struct set_window_layered_info_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
-    fprintf( stderr, ", color_key=%08x", req->color_key );
-    fprintf( stderr, ", alpha=%08x", req->alpha );
-    fprintf( stderr, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", color_key=%08x", req->color_key );
+    SERVER_LOG( LOG_ALWAYS, ", alpha=%08x", req->alpha );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
 }
 
 static void dump_alloc_user_handle_request( const struct alloc_user_handle_request *req )
@@ -4377,35 +4377,35 @@ static void dump_alloc_user_handle_request( const struct alloc_user_handle_reque
 
 static void dump_alloc_user_handle_reply( const struct alloc_user_handle_reply *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
 }
 
 static void dump_free_user_handle_request( const struct free_user_handle_request *req )
 {
-    fprintf( stderr, " handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%08x", req->handle );
 }
 
 static void dump_set_cursor_request( const struct set_cursor_request *req )
 {
-    fprintf( stderr, " flags=%08x", req->flags );
-    fprintf( stderr, ", handle=%08x", req->handle );
-    fprintf( stderr, ", show_count=%d", req->show_count );
-    fprintf( stderr, ", x=%d", req->x );
-    fprintf( stderr, ", y=%d", req->y );
+    SERVER_LOG( LOG_ALWAYS, " flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, ", handle=%08x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", show_count=%d", req->show_count );
+    SERVER_LOG( LOG_ALWAYS, ", x=%d", req->x );
+    SERVER_LOG( LOG_ALWAYS, ", y=%d", req->y );
     dump_rectangle( ", clip=", &req->clip );
-    fprintf( stderr, ", clip_msg=%08x", req->clip_msg );
+    SERVER_LOG( LOG_ALWAYS, ", clip_msg=%08x", req->clip_msg );
 }
 
 static void dump_set_cursor_reply( const struct set_cursor_reply *req )
 {
-    fprintf( stderr, " prev_handle=%08x", req->prev_handle );
-    fprintf( stderr, ", prev_count=%d", req->prev_count );
-    fprintf( stderr, ", prev_x=%d", req->prev_x );
-    fprintf( stderr, ", prev_y=%d", req->prev_y );
-    fprintf( stderr, ", new_x=%d", req->new_x );
-    fprintf( stderr, ", new_y=%d", req->new_y );
+    SERVER_LOG( LOG_ALWAYS, " prev_handle=%08x", req->prev_handle );
+    SERVER_LOG( LOG_ALWAYS, ", prev_count=%d", req->prev_count );
+    SERVER_LOG( LOG_ALWAYS, ", prev_x=%d", req->prev_x );
+    SERVER_LOG( LOG_ALWAYS, ", prev_y=%d", req->prev_y );
+    SERVER_LOG( LOG_ALWAYS, ", new_x=%d", req->new_x );
+    SERVER_LOG( LOG_ALWAYS, ", new_y=%d", req->new_y );
     dump_rectangle( ", new_clip=", &req->new_clip );
-    fprintf( stderr, ", last_change=%08x", req->last_change );
+    SERVER_LOG( LOG_ALWAYS, ", last_change=%08x", req->last_change );
 }
 
 static void dump_get_cursor_history_request( const struct get_cursor_history_request *req )
@@ -4419,14 +4419,14 @@ static void dump_get_cursor_history_reply( const struct get_cursor_history_reply
 
 static void dump_get_rawinput_buffer_request( const struct get_rawinput_buffer_request *req )
 {
-    fprintf( stderr, " rawinput_size=%u", req->rawinput_size );
-    fprintf( stderr, ", buffer_size=%u", req->buffer_size );
+    SERVER_LOG( LOG_ALWAYS, " rawinput_size=%u", req->rawinput_size );
+    SERVER_LOG( LOG_ALWAYS, ", buffer_size=%u", req->buffer_size );
 }
 
 static void dump_get_rawinput_buffer_reply( const struct get_rawinput_buffer_reply *req )
 {
-    fprintf( stderr, " next_size=%u", req->next_size );
-    fprintf( stderr, ", count=%08x", req->count );
+    SERVER_LOG( LOG_ALWAYS, " next_size=%u", req->next_size );
+    SERVER_LOG( LOG_ALWAYS, ", count=%08x", req->count );
     dump_varargs_bytes( ", data=", cur_size );
 }
 
@@ -4441,99 +4441,99 @@ static void dump_get_rawinput_devices_request( const struct get_rawinput_devices
 
 static void dump_get_rawinput_devices_reply( const struct get_rawinput_devices_reply *req )
 {
-    fprintf( stderr, " device_count=%08x", req->device_count );
+    SERVER_LOG( LOG_ALWAYS, " device_count=%08x", req->device_count );
     dump_varargs_rawinput_devices( ", devices=", cur_size );
 }
 
 static void dump_create_job_request( const struct create_job_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
     dump_varargs_object_attributes( ", objattr=", cur_size );
 }
 
 static void dump_create_job_reply( const struct create_job_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_open_job_request( const struct open_job_request *req )
 {
-    fprintf( stderr, " access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", rootdir=%04x", req->rootdir );
+    SERVER_LOG( LOG_ALWAYS, " access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", rootdir=%04x", req->rootdir );
     dump_varargs_unicode_str( ", name=", cur_size );
 }
 
 static void dump_open_job_reply( const struct open_job_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_assign_job_request( const struct assign_job_request *req )
 {
-    fprintf( stderr, " job=%04x", req->job );
-    fprintf( stderr, ", process=%04x", req->process );
+    SERVER_LOG( LOG_ALWAYS, " job=%04x", req->job );
+    SERVER_LOG( LOG_ALWAYS, ", process=%04x", req->process );
 }
 
 static void dump_process_in_job_request( const struct process_in_job_request *req )
 {
-    fprintf( stderr, " job=%04x", req->job );
-    fprintf( stderr, ", process=%04x", req->process );
+    SERVER_LOG( LOG_ALWAYS, " job=%04x", req->job );
+    SERVER_LOG( LOG_ALWAYS, ", process=%04x", req->process );
 }
 
 static void dump_set_job_limits_request( const struct set_job_limits_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", limit_flags=%08x", req->limit_flags );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", limit_flags=%08x", req->limit_flags );
 }
 
 static void dump_set_job_completion_port_request( const struct set_job_completion_port_request *req )
 {
-    fprintf( stderr, " job=%04x", req->job );
-    fprintf( stderr, ", port=%04x", req->port );
+    SERVER_LOG( LOG_ALWAYS, " job=%04x", req->job );
+    SERVER_LOG( LOG_ALWAYS, ", port=%04x", req->port );
     dump_uint64( ", key=", &req->key );
 }
 
 static void dump_get_job_info_request( const struct get_job_info_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_job_info_reply( const struct get_job_info_reply *req )
 {
-    fprintf( stderr, " total_processes=%d", req->total_processes );
-    fprintf( stderr, ", active_processes=%d", req->active_processes );
+    SERVER_LOG( LOG_ALWAYS, " total_processes=%d", req->total_processes );
+    SERVER_LOG( LOG_ALWAYS, ", active_processes=%d", req->active_processes );
     dump_varargs_uints( ", pids=", cur_size );
 }
 
 static void dump_terminate_job_request( const struct terminate_job_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
-    fprintf( stderr, ", status=%d", req->status );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, ", status=%d", req->status );
 }
 
 static void dump_suspend_process_request( const struct suspend_process_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_resume_process_request( const struct resume_process_request *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static void dump_get_next_thread_request( const struct get_next_thread_request *req )
 {
-    fprintf( stderr, " process=%04x", req->process );
-    fprintf( stderr, ", last=%04x", req->last );
-    fprintf( stderr, ", access=%08x", req->access );
-    fprintf( stderr, ", attributes=%08x", req->attributes );
-    fprintf( stderr, ", flags=%08x", req->flags );
+    SERVER_LOG( LOG_ALWAYS, " process=%04x", req->process );
+    SERVER_LOG( LOG_ALWAYS, ", last=%04x", req->last );
+    SERVER_LOG( LOG_ALWAYS, ", access=%08x", req->access );
+    SERVER_LOG( LOG_ALWAYS, ", attributes=%08x", req->attributes );
+    SERVER_LOG( LOG_ALWAYS, ", flags=%08x", req->flags );
 }
 
 static void dump_get_next_thread_reply( const struct get_next_thread_reply *req )
 {
-    fprintf( stderr, " handle=%04x", req->handle );
+    SERVER_LOG( LOG_ALWAYS, " handle=%04x", req->handle );
 }
 
 static const dump_func req_dumpers[REQ_NB_REQUESTS] = {
@@ -5567,34 +5567,34 @@ void trace_request(void)
     enum request req = current->req.request_header.req;
     if (req < REQ_NB_REQUESTS)
     {
-        fprintf( stderr, "%04x: %s(", current->id, req_names[req] );
+        SERVER_LOG( LOG_ALWAYS, "%04x: %s(", current->id, req_names[req] );
         if (req_dumpers[req])
         {
             cur_data = get_req_data();
             cur_size = get_req_data_size();
             req_dumpers[req]( &current->req );
         }
-        fprintf( stderr, " )\n" );
+        SERVER_LOG( LOG_ALWAYS, " )\n" );
     }
-    else fprintf( stderr, "%04x: %d(?)\n", current->id, req );
+    else SERVER_LOG( LOG_ALWAYS, "%04x: %d(?)\n", current->id, req );
 }
 
 void trace_reply( enum request req, const union generic_reply *reply )
 {
     if (req < REQ_NB_REQUESTS)
     {
-        fprintf( stderr, "%04x: %s() = %s",
+        SERVER_LOG( LOG_ALWAYS, "%04x: %s() = %s",
                  current->id, req_names[req], get_status_name(current->error) );
         if (reply_dumpers[req])
         {
-            fprintf( stderr, " {" );
+            SERVER_LOG( LOG_ALWAYS, " {" );
             cur_data = current->reply_data;
             cur_size = reply->reply_header.reply_size;
             reply_dumpers[req]( reply );
-            fprintf( stderr, " }" );
+            SERVER_LOG( LOG_ALWAYS, " }" );
         }
-        fputc( '\n', stderr );
+        SERVER_LOG( LOG_ALWAYS, "\n" );
     }
-    else fprintf( stderr, "%04x: %d() = %s\n",
+    else SERVER_LOG( LOG_ALWAYS, "%04x: %d() = %s\n",
                   current->id, req, get_status_name(current->error) );
 }

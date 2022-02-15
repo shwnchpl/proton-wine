@@ -346,7 +346,7 @@ static void grab_kernel_object( struct kernel_object *ptr )
 static void irp_call_dump( struct object *obj, int verbose )
 {
     struct irp_call *irp = (struct irp_call *)obj;
-    fprintf( stderr, "IRP call file=%p\n", irp->file );
+    SERVER_LOG( LOG_ALWAYS, "IRP call file=%p\n", irp->file );
 }
 
 static void irp_call_destroy( struct object *obj )
@@ -413,7 +413,7 @@ static void set_irp_result( struct irp_call *irp, unsigned int status,
 
 static void device_dump( struct object *obj, int verbose )
 {
-    fputs( "Device\n", stderr );
+    SERVER_LOG( LOG_ALWAYS, "Device\n" );
 }
 
 static void device_destroy( struct object *obj )
@@ -498,7 +498,7 @@ static void device_file_dump( struct object *obj, int verbose )
 {
     struct device_file *file = (struct device_file *)obj;
 
-    fprintf( stderr, "File on device %p\n", file->device );
+    SERVER_LOG( LOG_ALWAYS, "File on device %p\n", file->device );
 }
 
 static struct fd *device_file_get_fd( struct object *obj )
@@ -793,7 +793,7 @@ static void delete_device( struct device *device )
 
 static void device_manager_dump( struct object *obj, int verbose )
 {
-    fprintf( stderr, "Device manager\n" );
+    SERVER_LOG( LOG_ALWAYS, "Device manager\n" );
 }
 
 static int device_manager_signaled( struct object *obj, struct wait_queue_entry *entry )

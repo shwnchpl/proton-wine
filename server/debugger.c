@@ -299,7 +299,7 @@ static void debug_event_dump( struct object *obj, int verbose )
 {
     struct debug_event *debug_event = (struct debug_event *)obj;
     assert( obj->ops == &debug_event_ops );
-    fprintf( stderr, "Debug event sender=%p code=%d state=%d\n",
+    SERVER_LOG( LOG_ALWAYS, "Debug event sender=%p code=%d state=%d\n",
              debug_event->sender, debug_event->data.code, debug_event->state );
 }
 
@@ -323,7 +323,7 @@ static void debug_obj_dump( struct object *obj, int verbose )
 {
     struct debug_obj *debug_obj = (struct debug_obj *)obj;
     assert( obj->ops == &debug_obj_ops );
-    fprintf( stderr, "Debug context head=%p tail=%p\n",
+    SERVER_LOG( LOG_ALWAYS, "Debug context head=%p tail=%p\n",
              debug_obj->event_queue.next, debug_obj->event_queue.prev );
 }
 

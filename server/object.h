@@ -22,6 +22,7 @@
 #define __WINE_SERVER_OBJECT_H
 
 #include <poll.h>
+#include <stdio.h>
 #include <sys/time.h>
 #include "wine/server_protocol.h"
 #include "wine/list.h"
@@ -299,7 +300,7 @@ extern struct object *create_symlink( struct object *root, const struct unicode_
 /* global variables */
 
   /* command-line options */
-extern int debug_level;
+extern int debug_log_level;
 extern int foreground;
 extern timeout_t master_socket_timeout;
 extern const char *server_argv0;
@@ -333,5 +334,15 @@ extern struct type_descr key_type;
 #define KEYEDEVENT_WAIT       0x0001
 #define KEYEDEVENT_WAKE       0x0002
 #define KEYEDEVENT_ALL_ACCESS (STANDARD_RIGHTS_REQUIRED | 0x0003)
+
+#define LOG_ALWAYS  0
+#define LOG_DEBUG   1
+#define LOG_VERBOSE 2
+
+#define SERVER_LOG(l_, ...)   \
+    do {    \
+        if (debug_log_level >= l_)  \
+            fprintf(stderr, __VA_ARGS__);  \
+    } while (0)
 
 #endif  /* __WINE_SERVER_OBJECT_H */

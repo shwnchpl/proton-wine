@@ -222,7 +222,7 @@ static size_t page_mask;
 static void ranges_dump( struct object *obj, int verbose )
 {
     struct ranges *ranges = (struct ranges *)obj;
-    fprintf( stderr, "Memory ranges count=%u\n", ranges->count );
+    SERVER_LOG( LOG_ALWAYS, "Memory ranges count=%u\n", ranges->count );
 }
 
 static void ranges_destroy( struct object *obj )
@@ -234,7 +234,7 @@ static void ranges_destroy( struct object *obj )
 static void shared_map_dump( struct object *obj, int verbose )
 {
     struct shared_map *shared = (struct shared_map *)obj;
-    fprintf( stderr, "Shared mapping fd=%p file=%p\n", shared->fd, shared->file );
+    SERVER_LOG( LOG_ALWAYS, "Shared mapping fd=%p file=%p\n", shared->fd, shared->file );
 }
 
 static void shared_map_destroy( struct object *obj )
@@ -1072,7 +1072,7 @@ static void mapping_dump( struct object *obj, int verbose )
 {
     struct mapping *mapping = (struct mapping *)obj;
     assert( obj->ops == &mapping_ops );
-    fprintf( stderr, "Mapping size=%08x%08x flags=%08x fd=%p shared=%p\n",
+    SERVER_LOG( LOG_ALWAYS, "Mapping size=%08x%08x flags=%08x fd=%p shared=%p\n",
              (unsigned int)(mapping->size >> 32), (unsigned int)mapping->size,
              mapping->flags, mapping->fd, mapping->shared );
 }

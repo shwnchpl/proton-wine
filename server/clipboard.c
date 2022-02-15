@@ -144,7 +144,7 @@ static void clipboard_dump( struct object *obj, int verbose )
 {
     struct clipboard *clipboard = (struct clipboard *)obj;
 
-    fprintf( stderr, "Clipboard open_thread=%p open_win=%08x owner=%08x viewer=%08x seq=%u\n",
+    SERVER_LOG( LOG_ALWAYS, "Clipboard open_thread=%p open_win=%08x owner=%08x viewer=%08x seq=%u\n",
              clipboard->open_thread, clipboard->open_win,
              clipboard->owner, clipboard->viewer, clipboard->seqno );
 }

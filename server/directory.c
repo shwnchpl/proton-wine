@@ -170,7 +170,7 @@ static struct type_descr *types[] =
 
 static void object_type_dump( struct object *obj, int verbose )
 {
-    fputs( "Object type\n", stderr );
+    SERVER_LOG( LOG_ALWAYS, "Object type\n" );
 }
 
 static struct object_type *create_object_type( struct object *root, unsigned int index,
@@ -188,7 +188,7 @@ static struct object_type *create_object_type( struct object *root, unsigned int
 
 static void directory_dump( struct object *obj, int verbose )
 {
-    fputs( "Directory\n", stderr );
+    SERVER_LOG( LOG_ALWAYS, "Directory\n" );
 }
 
 static struct object *directory_lookup_name( struct object *obj, struct unicode_str *name,

@@ -138,7 +138,7 @@ static void semaphore_dump( struct object *obj, int verbose )
 {
     struct semaphore *sem = (struct semaphore *)obj;
     assert( obj->ops == &semaphore_ops );
-    fprintf( stderr, "Semaphore count=%d max=%d\n", sem->count, sem->max );
+    SERVER_LOG( LOG_ALWAYS, "Semaphore count=%d max=%d\n", sem->count, sem->max );
 }
 
 static int semaphore_signaled( struct object *obj, struct wait_queue_entry *entry )

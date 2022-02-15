@@ -278,7 +278,7 @@ static struct hook *get_next_hook( struct thread *thread, struct hook *hook, int
 static void hook_table_dump( struct object *obj, int verbose )
 {
     /* struct hook_table *table = (struct hook_table *)obj; */
-    fprintf( stderr, "Hook table\n" );
+    SERVER_LOG( LOG_ALWAYS, "Hook table\n" );
 }
 
 static void hook_table_destroy( struct object *obj )

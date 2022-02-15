@@ -111,8 +111,8 @@ void init_process_tracing( struct process *process )
                         server_mach_port, 0, 0 );
         if (ret)
         {
-            if (ret != MACH_RCV_TIMED_OUT && debug_level)
-                fprintf( stderr, "warning: mach port receive failed with %x\n", ret );
+            if (ret != MACH_RCV_TIMED_OUT)
+                SERVER_LOG( LOG_DEBUG, "warning: mach port receive failed with %x\n", ret );
             return;
         }
 
@@ -290,8 +290,8 @@ int send_thread_signal( struct thread *thread, int sig )
             thread->unix_tid = -1;
         }
     }
-    if (debug_level && ret != -1)
-        fprintf( stderr, "%04x: *sent signal* signal=%d\n", thread->id, sig );
+    if (ret != -1)
+        SERVER_LOG( LOG_DEBUG, "%04x: *sent signal* signal=%d\n", thread->id, sig );
     return (ret != -1);
 }
 

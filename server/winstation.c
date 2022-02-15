@@ -166,7 +166,7 @@ static void winstation_dump( struct object *obj, int verbose )
 {
     struct winstation *winstation = (struct winstation *)obj;
 
-    fprintf( stderr, "Winstation flags=%x clipboard=%p atoms=%p\n",
+    SERVER_LOG( LOG_ALWAYS, "Winstation flags=%x clipboard=%p atoms=%p\n",
              winstation->flags, winstation->clipboard, winstation->atom_table );
 }
 
@@ -275,7 +275,7 @@ static void desktop_dump( struct object *obj, int verbose )
 {
     struct desktop *desktop = (struct desktop *)obj;
 
-    fprintf( stderr, "Desktop flags=%x winstation=%p top_win=%p hooks=%p\n",
+    SERVER_LOG( LOG_ALWAYS, "Desktop flags=%x winstation=%p top_win=%p hooks=%p\n",
              desktop->flags, desktop->winstation, desktop->top_window, desktop->global_hooks );
 }
 

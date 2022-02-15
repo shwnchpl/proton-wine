@@ -99,7 +99,7 @@ void esync_init(void)
     if (ftruncate( shm_fd, shm_size ) == -1)
         perror( "ftruncate" );
 
-    fprintf( stderr, "esync: up and running.\n" );
+    SERVER_LOG( LOG_ALWAYS, "esync: up and running.\n" );
 
     atexit( shm_cleanup );
 }
@@ -150,7 +150,7 @@ static void esync_dump( struct object *obj, int verbose )
 {
     struct esync *esync = (struct esync *)obj;
     assert( obj->ops == &esync_ops );
-    fprintf( stderr, "esync fd=%d\n", esync->fd );
+    SERVER_LOG( LOG_ALWAYS, "esync fd=%d\n", esync->fd );
 }
 
 static int esync_get_esync_fd( struct object *obj, enum esync_type *type )
@@ -195,7 +195,7 @@ static void *get_shm( unsigned int idx )
         int new_size = max(shm_addrs_size * 2, entry + 1);
 
         if (!(shm_addrs = realloc( shm_addrs, new_size * sizeof(shm_addrs[0]) )))
-            fprintf( stderr, "esync: couldn't expand shm_addrs array to size %d\n", entry + 1 );
+            SERVER_LOG( LOG_ALWAYS, "esync: couldn't expand shm_addrs array to size %d\n", entry + 1 );
 
         memset( shm_addrs + shm_addrs_size, 0, (new_size - shm_addrs_size) * sizeof(shm_addrs[0]) );
 
@@ -207,12 +207,11 @@ static void *get_shm( unsigned int idx )
         void *addr = mmap( NULL, pagesize, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, entry * pagesize );
         if (addr == (void *)-1)
         {
-            fprintf( stderr, "esync: failed to map page %d (offset %#lx): ", entry, entry * pagesize );
+            SERVER_LOG( LOG_ALWAYS, "esync: failed to map page %d (offset %#lx): ", entry, entry * pagesize );
             perror( "mmap" );
         }
 
-        if (debug_level)
-            fprintf( stderr, "esync: Mapping page %d at %p.\n", entry, addr );
+        SERVER_LOG( LOG_DEBUG, "esync: Mapping page %d at %p.\n", entry, addr );
 
         if (__sync_val_compare_and_swap( &shm_addrs[entry], 0, addr ))
             munmap( addr, pagesize ); /* someone beat us to it */
@@ -278,7 +277,7 @@ struct esync *create_esync( struct object *root, const struct unicode_str *name,
                 shm_size += pagesize;
                 if (ftruncate( shm_fd, shm_size ) == -1)
                 {
-                    fprintf( stderr, "esync: couldn't expand %s to size %ld: ",
+                    SERVER_LOG( LOG_ALWAYS, "esync: couldn't expand %s to size %ld: ",
                              shm_name, (long)shm_size );
                     perror( "ftruncate" );
                 }
@@ -402,8 +401,7 @@ void esync_set_event( struct esync *esync )
     assert( esync->obj.ops == &esync_ops );
     assert( event != NULL );
 
-    if (debug_level)
-        fprintf( stderr, "esync_set_event() fd=%d\n", esync->fd );
+    SERVER_LOG( LOG_DEBUG, "esync_set_event() fd=%d\n", esync->fd );
 
     if (esync->type == ESYNC_MANUAL_EVENT)
     {
@@ -433,8 +431,7 @@ void esync_reset_event( struct esync *esync )
     assert( esync->obj.ops == &esync_ops );
     assert( event != NULL );
 
-    if (debug_level)
-        fprintf( stderr, "esync_reset_event() fd=%d\n", esync->fd );
+    SERVER_LOG( LOG_DEBUG, "esync_reset_event() fd=%d\n", esync->fd );
 
     if (esync->type == ESYNC_MANUAL_EVENT)
     {
@@ -467,8 +464,7 @@ void esync_abandon_mutexes( struct thread *thread )
 
         if (mutex->tid == thread->id)
         {
-            if (debug_level)
-                fprintf( stderr, "esync_abandon_mutexes() fd=%d\n", esync->fd );
+            SERVER_LOG( LOG_DEBUG, "esync_abandon_mutexes() fd=%d\n", esync->fd );
             mutex->tid = ~0;
             mutex->count = 0;
             esync_wake_fd( esync->fd );
@@ -572,9 +568,9 @@ DECL_HANDLER(get_esync_fd)
     }
     else
     {
-        if (debug_level)
+        if (debug_log_level)
         {
-            fprintf( stderr, "%04x: esync: can't wait on object: ", current->id );
+            SERVER_LOG( LOG_DEBUG, "%04x: esync: can't wait on object: ", current->id );
             obj->ops->dump( obj, 0 );
         }
         set_error( STATUS_NOT_IMPLEMENTED );

@@ -242,7 +242,7 @@ static void event_dump( struct object *obj, int verbose )
 {
     struct event *event = (struct event *)obj;
     assert( obj->ops == &event_ops );
-    fprintf( stderr, "Event manual=%d signaled=%d\n",
+    SERVER_LOG( LOG_ALWAYS, "Event manual=%d signaled=%d\n",
              event->manual_reset, event->signaled );
 }
 
@@ -325,7 +325,7 @@ struct keyed_event *get_keyed_event_obj( struct process *process, obj_handle_t h
 
 static void keyed_event_dump( struct object *obj, int verbose )
 {
-    fputs( "Keyed event\n", stderr );
+    SERVER_LOG( LOG_ALWAYS, "Keyed event\n" );
 }
 
 static enum select_op matching_op( enum select_op op )

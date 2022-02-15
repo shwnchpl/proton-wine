@@ -456,7 +456,7 @@ static void job_dump( struct object *obj, int verbose )
 {
     struct job *job = (struct job *)obj;
     assert( obj->ops == &job_ops );
-    fprintf( stderr, "Job processes=%d child_jobs=%d parent=%p\n",
+    SERVER_LOG( LOG_ALWAYS, "Job processes=%d child_jobs=%d parent=%p\n",
              list_count(&job->process_list), list_count(&job->child_job_list), job->parent );
 }
 
@@ -580,7 +580,7 @@ static void server_shutdown_timeout( void *arg )
     switch(++shutdown_stage)
     {
     case 1:  /* signal system processes to exit */
-        if (debug_level) fprintf( stderr, "wineserver: shutting down\n" );
+        SERVER_LOG( LOG_DEBUG, "wineserver: shutting down\n" );
         if (shutdown_event) set_event( shutdown_event );
         shutdown_timeout = add_timeout_user( 2 * -TICKS_PER_SEC, server_shutdown_timeout, NULL );
         close_master_socket( 4 * -TICKS_PER_SEC );
@@ -607,7 +607,7 @@ void shutdown_master_socket(void)
 /* final cleanup once we are sure a process is really dead */
 static void process_died( struct process *process )
 {
-    if (debug_level) fprintf( stderr, "%04x: *process killed*\n", process->id );
+    SERVER_LOG( LOG_DEBUG, "%04x: *process killed*\n", process->id );
     if (!process->is_system)
     {
         if (!--user_processes && !shutdown_stage && master_socket_timeout != TIMEOUT_INFINITE)
@@ -813,7 +813,7 @@ static void process_dump( struct object *obj, int verbose )
     struct process *process = (struct process *)obj;
     assert( obj->ops == &process_ops );
 
-    fprintf( stderr, "Process id=%04x handles=%p\n", process->id, process->handles );
+    SERVER_LOG( LOG_ALWAYS, "Process id=%04x handles=%p\n", process->id, process->handles );
 }
 
 static int process_signaled( struct object *obj, struct wait_queue_entry *entry )
@@ -919,11 +919,11 @@ static void startup_info_dump( struct object *obj, int verbose )
     struct startup_info *info = (struct startup_info *)obj;
     assert( obj->ops == &startup_info_ops );
 
-    fputs( "Startup info", stderr );
+    SERVER_LOG( LOG_ALWAYS, "Startup info" );
     if (info->data)
-        fprintf( stderr, " in=%04x out=%04x err=%04x",
+        SERVER_LOG( LOG_ALWAYS, " in=%04x out=%04x err=%04x",
                  info->data->hstdin, info->data->hstdout, info->data->hstderr );
-    fputc( '\n', stderr );
+    SERVER_LOG( LOG_ALWAYS, "\n" );
 }
 
 static int startup_info_signaled( struct object *obj, struct wait_queue_entry *entry )

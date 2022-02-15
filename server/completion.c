@@ -159,7 +159,7 @@ static void completion_wait_dump( struct object *obj, int verbose )
     struct completion_wait *wait = (struct completion_wait *)obj;
 
     assert( obj->ops == &completion_wait_ops );
-    fprintf( stderr, "Completion depth=%u\n", wait->depth );
+    SERVER_LOG( LOG_ALWAYS, "Completion depth=%u\n", wait->depth );
 }
 
 static int completion_wait_signaled( struct object *obj, struct wait_queue_entry *entry )

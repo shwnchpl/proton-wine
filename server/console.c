@@ -736,7 +736,7 @@ static void console_dump( struct object *obj, int verbose )
 {
     struct console *console = (struct console *)obj;
     assert( obj->ops == &console_ops );
-    fprintf( stderr, "Console input active=%p server=%p\n",
+    SERVER_LOG( LOG_ALWAYS, "Console input active=%p server=%p\n",
              console->active, console->server );
 }
 
@@ -817,7 +817,7 @@ static void screen_buffer_dump( struct object *obj, int verbose )
     struct screen_buffer *screen_buffer = (struct screen_buffer *)obj;
     assert( obj->ops == &screen_buffer_ops );
 
-    fprintf(stderr, "Console screen buffer input=%p\n", screen_buffer->input );
+    SERVER_LOG( LOG_ALWAYS, "Console screen buffer input=%p\n", screen_buffer->input );
 }
 
 static void screen_buffer_destroy( struct object *obj )
@@ -864,7 +864,7 @@ static struct fd *screen_buffer_get_fd( struct object *obj )
 static void console_server_dump( struct object *obj, int verbose )
 {
     assert( obj->ops == &console_server_ops );
-    fprintf( stderr, "Console server\n" );
+    SERVER_LOG( LOG_ALWAYS, "Console server\n" );
 }
 
 static void console_server_destroy( struct object *obj )
@@ -1198,7 +1198,7 @@ static void console_server_ioctl( struct fd *fd, ioctl_code_t code, struct async
 
 static void console_connection_dump( struct object *obj, int verbose )
 {
-    fputs( "console connection\n", stderr );
+    SERVER_LOG( LOG_ALWAYS, "console connection\n" );
 }
 
 static struct fd *console_connection_get_fd( struct object *obj )
@@ -1252,7 +1252,7 @@ static void console_connection_destroy( struct object *obj )
 
 static void console_device_dump( struct object *obj, int verbose )
 {
-    fputs( "Console device\n", stderr );
+    SERVER_LOG( LOG_ALWAYS, "Console device\n" );
 }
 
 static struct object *console_device_lookup_name( struct object *obj, struct unicode_str *name,
@@ -1372,7 +1372,7 @@ static struct object *console_device_open_file( struct object *obj, unsigned int
 
 static void console_input_dump( struct object *obj, int verbose )
 {
-    fputs( "console Input device\n", stderr );
+    SERVER_LOG( LOG_ALWAYS, "console Input device\n" );
 }
 
 static int console_input_add_queue( struct object *obj, struct wait_queue_entry *entry )
@@ -1444,7 +1444,7 @@ static void console_input_flush( struct fd *fd, struct async *async )
 
 static void console_output_dump( struct object *obj, int verbose )
 {
-    fputs( "console Output device\n", stderr );
+    SERVER_LOG( LOG_ALWAYS, "console Output device\n" );
 }
 
 static int console_output_add_queue( struct object *obj, struct wait_queue_entry *entry )

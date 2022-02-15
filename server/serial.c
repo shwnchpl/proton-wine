@@ -162,7 +162,7 @@ static void serial_dump( struct object *obj, int verbose )
 {
     struct serial *serial = (struct serial *)obj;
     assert( obj->ops == &serial_ops );
-    fprintf( stderr, "Port fd=%p mask=%x\n", serial->fd, serial->eventmask );
+    SERVER_LOG( LOG_ALWAYS, "Port fd=%p mask=%x\n", serial->fd, serial->eventmask );
 }
 
 static struct serial *get_serial_obj( struct process *process, obj_handle_t handle, unsigned int access )

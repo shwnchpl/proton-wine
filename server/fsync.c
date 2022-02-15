@@ -62,7 +62,7 @@ int do_fsync(void)
         {
             fclose(f);
             do_fsync_cached = 0;
-            fprintf( stderr, "fsync: old futex2 patches detected, disabling.\n" );
+            SERVER_LOG( LOG_ALWAYS, "fsync: old futex2 patches detected, disabling.\n" );
             return do_fsync_cached;
         }
 
@@ -105,7 +105,7 @@ void fsync_init(void)
         sprintf( shm_name, "/wine-%lx-fsync", (unsigned long)st.st_ino );
 
     if (!shm_unlink( shm_name ))
-        fprintf( stderr, "fsync: warning: a previous shm file %s was not properly removed\n", shm_name );
+        SERVER_LOG( LOG_ALWAYS, "fsync: warning: a previous shm file %s was not properly removed\n", shm_name );
 
     shm_fd = shm_open( shm_name, O_RDWR | O_CREAT | O_EXCL, 0644 );
     if (shm_fd == -1)
@@ -122,7 +122,7 @@ void fsync_init(void)
 
     is_fsync_initialized = 1;
 
-    fprintf( stderr, "fsync: up and running.\n" );
+    SERVER_LOG( LOG_ALWAYS, "fsync: up and running.\n" );
 
     atexit( shm_cleanup );
 }
@@ -172,7 +172,7 @@ static void fsync_dump( struct object *obj, int verbose )
 {
     struct fsync *fsync = (struct fsync *)obj;
     assert( obj->ops == &fsync_ops );
-    fprintf( stderr, "fsync idx=%d\n", fsync->shm_idx );
+    SERVER_LOG( LOG_DEBUG, "fsync idx=%d\n", fsync->shm_idx );
 }
 
 static unsigned int fsync_get_fsync_idx( struct object *obj, enum fsync_type *type)
@@ -209,7 +209,7 @@ static void *get_shm( unsigned int idx )
         int new_size = max(shm_addrs_size * 2, entry + 1);
 
         if (!(shm_addrs = realloc( shm_addrs, new_size * sizeof(shm_addrs[0]) )))
-            fprintf( stderr, "fsync: couldn't expand shm_addrs array to size %d\n", entry + 1 );
+            SERVER_LOG( LOG_ALWAYS, "fsync: couldn't expand shm_addrs array to size %d\n", entry + 1 );
 
         memset( shm_addrs + shm_addrs_size, 0, (new_size - shm_addrs_size) * sizeof(shm_addrs[0]) );
 
@@ -221,12 +221,11 @@ static void *get_shm( unsigned int idx )
         void *addr = mmap( NULL, pagesize, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, entry * pagesize );
         if (addr == (void *)-1)
         {
-            fprintf( stderr, "fsync: failed to map page %d (offset %#lx): ", entry, entry * pagesize );
+            SERVER_LOG( LOG_ALWAYS, "fsync: failed to map page %d (offset %#lx): ", entry, entry * pagesize );
             perror( "mmap" );
         }
 
-        if (debug_level)
-            fprintf( stderr, "fsync: Mapping page %d at %p.\n", entry, addr );
+        SERVER_LOG( LOG_DEBUG, "fsync: Mapping page %d at %p.\n", entry, addr );
 
         if (__sync_val_compare_and_swap( &shm_addrs[entry], 0, addr ))
             munmap( addr, pagesize ); /* someone beat us to it */
@@ -257,7 +256,7 @@ unsigned int fsync_alloc_shm( int low, int high )
         shm_size += pagesize;
         if (ftruncate( shm_fd, shm_size ) == -1)
         {
-            fprintf( stderr, "fsync: couldn't expand %s to size %jd: ",
+            SERVER_LOG( LOG_ALWAYS, "fsync: couldn't expand %s to size %jd: ",
                 shm_name, shm_size );
             perror( "ftruncate" );
         }
@@ -339,8 +338,7 @@ void fsync_wake_futex( unsigned int shm_idx )
 {
     struct fsync_event *event;
 
-    if (debug_level)
-        fprintf( stderr, "fsync_wake_futex: index %u\n", shm_idx );
+    SERVER_LOG( LOG_DEBUG, "fsync_wake_futex: index %u\n", shm_idx );
 
     if (!shm_idx)
         return;
@@ -354,8 +352,7 @@ void fsync_wake_up( struct object *obj )
 {
     enum fsync_type type;
 
-    if (debug_level)
-        fprintf( stderr, "fsync_wake_up: object %p\n", obj );
+    SERVER_LOG( LOG_DEBUG, "fsync_wake_up: object %p\n", obj );
 
     if (obj->ops->get_fsync_idx)
         fsync_wake_futex( obj->ops->get_fsync_idx( obj, &type ) );
@@ -365,8 +362,7 @@ void fsync_clear_futex( unsigned int shm_idx )
 {
     struct fsync_event *event;
 
-    if (debug_level)
-        fprintf( stderr, "fsync_clear_futex: index %u\n", shm_idx );
+    SERVER_LOG( LOG_DEBUG, "fsync_clear_futex: index %u\n", shm_idx );
 
     if (!shm_idx)
         return;
@@ -379,8 +375,7 @@ void fsync_clear( struct object *obj )
 {
     enum fsync_type type;
 
-    if (debug_level)
-        fprintf( stderr, "fsync_clear: object %p\n", obj );
+    SERVER_LOG( LOG_DEBUG, "fsync_clear: object %p\n", obj );
 
     if (obj->ops->get_fsync_idx)
         fsync_clear_futex( obj->ops->get_fsync_idx( obj, &type ) );
@@ -419,8 +414,7 @@ void fsync_abandon_mutexes( struct thread *thread )
 
         if (mutex->tid == thread->id)
         {
-            if (debug_level)
-                fprintf( stderr, "fsync_abandon_mutexes() idx=%d\n", fsync->shm_idx );
+            SERVER_LOG( LOG_DEBUG, "fsync_abandon_mutexes() idx=%d\n", fsync->shm_idx );
             mutex->tid = ~0;
             mutex->count = 0;
             futex_wake( &mutex->tid, INT_MAX );
@@ -505,9 +499,9 @@ DECL_HANDLER(get_fsync_idx)
     }
     else
     {
-        if (debug_level)
+        if (debug_log_level)
         {
-            fprintf( stderr, "%04x: fsync: can't wait on object: ", current->id );
+            SERVER_LOG( LOG_DEBUG, "%04x: fsync: can't wait on object: ", current->id );
             obj->ops->dump( obj, 0 );
         }
         set_error( STATUS_NOT_IMPLEMENTED );

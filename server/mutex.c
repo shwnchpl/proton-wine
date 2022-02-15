@@ -152,7 +152,7 @@ static void mutex_dump( struct object *obj, int verbose )
 {
     struct mutex *mutex = (struct mutex *)obj;
     assert( obj->ops == &mutex_ops );
-    fprintf( stderr, "Mutex count=%u owner=%p\n", mutex->count, mutex->owner );
+    SERVER_LOG( LOG_ALWAYS, "Mutex count=%u owner=%p\n", mutex->count, mutex->owner );
 }
 
 static int mutex_signaled( struct object *obj, struct wait_queue_entry *entry )

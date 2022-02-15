@@ -304,24 +304,24 @@ static void save_subkeys( const struct key *key, const struct key *base, FILE *f
 
 static void dump_operation( const struct key *key, const struct key_value *value, const char *op )
 {
-    fprintf( stderr, "%s key ", op );
-    if (key) dump_path( key, NULL, stderr );
-    else fprintf( stderr, "ERROR" );
+    SERVER_LOG( LOG_VERBOSE, "%s key ", op );
+    if (key && debug_log_level > 1) dump_path( key, NULL, stderr );
+    else SERVER_LOG( LOG_VERBOSE, "ERROR" );
     if (value)
     {
-        fprintf( stderr, " value ");
-        dump_value( value, stderr );
+        SERVER_LOG( LOG_VERBOSE, " value ");
+        if (debug_log_level > 1) dump_value( value, stderr );
     }
-    else fprintf( stderr, "\n" );
+    else SERVER_LOG( LOG_VERBOSE, "\n" );
 }
 
 static void key_dump( struct object *obj, int verbose )
 {
     struct key *key = (struct key *)obj;
     assert( obj->ops == &key_ops );
-    fprintf( stderr, "Key flags=%x ", key->flags );
+    SERVER_LOG( LOG_ALWAYS, "Key flags=%x ", key->flags );
     dump_path( key, NULL, stderr );
-    fprintf( stderr, "\n" );
+    SERVER_LOG( LOG_ALWAYS, "\n" );
 }
 
 /* notify waiter and maybe delete the notification */
@@ -803,7 +803,8 @@ static struct key *open_key( struct key *key, const struct unicode_str *name, un
         set_error( STATUS_OBJECT_NAME_NOT_FOUND );
         return NULL;
     }
-    if (debug_level > 1) dump_operation( key, NULL, "Open" );
+    if (debug_log_level > 1)
+        dump_operation( key, NULL, "Open" );
     if (key->flags & KEY_PREDEF) set_error( STATUS_PREDEFINED_HANDLE );
     grab_object( key );
     return key;
@@ -834,7 +835,8 @@ static struct key *create_key( struct key *key, const struct unicode_str *name,
             set_error( STATUS_OBJECT_NAME_NOT_FOUND );
             return NULL;
         }
-        if (debug_level > 1) dump_operation( key, NULL, "Open" );
+        if (debug_log_level > 1)
+            dump_operation( key, NULL, "Open" );
         if (key->flags & KEY_PREDEF) set_error( STATUS_PREDEFINED_HANDLE );
         grab_object( key );
         return key;
@@ -865,7 +867,8 @@ static struct key *create_key( struct key *key, const struct unicode_str *name,
     if (sd) default_set_sd( &key->obj, sd, OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION |
                             DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION );
 
-    if (debug_level > 1) dump_operation( key, NULL, "Create" );
+    if (debug_log_level > 1)
+        dump_operation( key, NULL, "Create" );
     if (class && class->len)
     {
         key->classlen = class->len;
@@ -1014,7 +1017,8 @@ static void enum_key( struct key *key, int index, int info_class, struct enum_ke
         }
     }
     free( fullname );
-    if (debug_level > 1) dump_operation( key, NULL, "Enum" );
+    if (debug_log_level > 1)
+        dump_operation( key, NULL, "Enum" );
 }
 
 /* delete a key and its values */
@@ -1052,7 +1056,8 @@ static int delete_key( struct key *key, int recurse )
         return -1;
     }
 
-    if (debug_level > 1) dump_operation( key, NULL, "Delete" );
+    if (debug_log_level > 1)
+        dump_operation( key, NULL, "Delete" );
     free_subkey( parent, index );
     touch_key( parent, REG_NOTIFY_CHANGE_NAME );
     return 0;
@@ -1155,7 +1160,8 @@ static void set_value( struct key *key, const struct unicode_str *name,
         if (value->type == type && value->len == len &&
             value->data && !memcmp( value->data, data, len ))
         {
-            if (debug_level > 1) dump_operation( key, value, "Skip setting" );
+            if (debug_log_level > 1)
+                dump_operation( key, value, "Skip setting" );
             return;
         }
     }
@@ -1186,7 +1192,8 @@ static void set_value( struct key *key, const struct unicode_str *name,
     value->len   = len;
     value->data  = ptr;
     touch_key( key, REG_NOTIFY_CHANGE_LAST_SET );
-    if (debug_level > 1) dump_operation( key, value, "Set" );
+    if (debug_log_level > 1)
+        dump_operation( key, value, "Set" );
 }
 
 /* get a key value */
@@ -1206,7 +1213,8 @@ static void get_value( struct key *key, const struct unicode_str *name, int *typ
         *type = value->type;
         *len  = value->len;
         if (value->data) set_reply_data( value->data, min( value->len, get_reply_max_size() ));
-        if (debug_level > 1) dump_operation( key, value, "Get" );
+        if (debug_log_level > 1)
+            dump_operation( key, value, "Get" );
     }
     else
     {
@@ -1268,7 +1276,8 @@ static void enum_value( struct key *key, int i, int info_class, struct enum_key_
                 memcpy( data, value->name, maxlen );
             }
         }
-        if (debug_level > 1) dump_operation( key, value, "Enum" );
+        if (debug_log_level > 1)
+            dump_operation( key, value, "Enum" );
     }
 }
 
@@ -1289,7 +1298,8 @@ static void delete_value( struct key *key, const struct unicode_str *name )
         set_error( STATUS_OBJECT_NAME_NOT_FOUND );
         return;
     }
-    if (debug_level > 1) dump_operation( key, value, "Delete" );
+    if (debug_log_level > 1)
+        dump_operation( key, value, "Delete" );
     free( value->name );
     free( value->data );
     for (i = index; i < key->last_value; i++) key->values[i] = key->values[i + 1];
@@ -1382,9 +1392,9 @@ static int get_file_tmp_space( struct file_load_info *info, size_t size )
 static void file_read_error( const char *err, struct file_load_info *info )
 {
     if (info->filename)
-        fprintf( stderr, "%s:%d: %s '%s'\n", info->filename, info->line, err, info->buffer );
+        SERVER_LOG( LOG_ALWAYS, "%s:%d: %s '%s'\n", info->filename, info->line, err, info->buffer );
     else
-        fprintf( stderr, "<fd>:%d: %s '%s'\n", info->line, err, info->buffer );
+        SERVER_LOG( LOG_ALWAYS, "<fd>:%d: %s '%s'\n", info->line, err, info->buffer );
 }
 
 /* convert a data type tag to a value type */
@@ -1790,7 +1800,7 @@ static int load_init_registry_from_file( const char *filename, struct key *key )
         fclose( f );
         if (get_error() == STATUS_NOT_REGISTRY_FILE)
         {
-            fprintf( stderr, "%s is not a valid registry file\n", filename );
+            SERVER_LOG( LOG_ALWAYS, "%s is not a valid registry file\n", filename );
             return 1;
         }
     }
@@ -2028,7 +2038,8 @@ static int save_branch( struct key *key, const char *path )
 
     if (!(key->flags & KEY_DIRTY))
     {
-        if (debug_level > 1) dump_operation( key, NULL, "Not saving clean" );
+        if (debug_log_level > 1)
+            dump_operation( key, NULL, "Not saving clean" );
         return 1;
     }
 
@@ -2070,9 +2081,9 @@ static int save_branch( struct key *key, const char *path )
         goto done;
     }
 
-    if (debug_level > 1)
+    if (debug_log_level)
     {
-        fprintf( stderr, "%s: ", path );
+        SERVER_LOG( LOG_DEBUG, "%s: ", path );
         dump_operation( key, NULL, "saving" );
     }
 
@@ -2122,7 +2133,7 @@ void flush_registry(void)
     {
         if (!save_branch( save_branch_info[i].key, save_branch_info[i].path ))
         {
-            fprintf( stderr, "wineserver: could not save registry branch to %s",
+            SERVER_LOG( LOG_ALWAYS, "wineserver: could not save registry branch to %s",
                      save_branch_info[i].path );
             perror( " " );
         }

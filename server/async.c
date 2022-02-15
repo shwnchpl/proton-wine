@@ -104,7 +104,7 @@ static void async_dump( struct object *obj, int verbose )
 {
     struct async *async = (struct async *)obj;
     assert( obj->ops == &async_ops );
-    fprintf( stderr, "Async thread=%p\n", async->thread );
+    SERVER_LOG( LOG_ALWAYS, "Async thread=%p\n", async->thread );
 }
 
 static int async_signaled( struct object *obj, struct wait_queue_entry *entry )
@@ -609,7 +609,7 @@ static const struct object_ops iosb_ops =
 static void iosb_dump( struct object *obj, int verbose )
 {
     assert( obj->ops == &iosb_ops );
-    fprintf( stderr, "I/O status block\n" );
+    SERVER_LOG( LOG_ALWAYS, "I/O status block\n" );
 }
 
 static void iosb_destroy( struct object *obj )

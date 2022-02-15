@@ -219,7 +219,7 @@ static void timer_dump( struct object *obj, int verbose )
     struct timer *timer = (struct timer *)obj;
     timeout_t timeout = abstime_to_timeout( timer->when );
     assert( obj->ops == &timer_ops );
-    fprintf( stderr, "Timer manual=%d when=%s period=%u\n",
+    SERVER_LOG( LOG_ALWAYS, "Timer manual=%d when=%s period=%u\n",
              timer->manual, get_timeout_str(timeout), timer->period );
 }
 

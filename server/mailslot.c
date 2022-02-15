@@ -285,7 +285,7 @@ static void mailslot_dump( struct object *obj, int verbose )
     struct mailslot *mailslot = (struct mailslot *) obj;
 
     assert( obj->ops == &mailslot_ops );
-    fprintf( stderr, "Mailslot max_msgsize=%d read_timeout=%s\n",
+    SERVER_LOG( LOG_ALWAYS, "Mailslot max_msgsize=%d read_timeout=%s\n",
              mailslot->max_msgsize, get_timeout_str(mailslot->read_timeout) );
 }
 
@@ -388,7 +388,7 @@ static void mailslot_queue_async( struct fd *fd, struct async *async, int type, 
 
 static void mailslot_device_dump( struct object *obj, int verbose )
 {
-    fputs( "Mailslot device\n", stderr );
+    SERVER_LOG( LOG_ALWAYS, "Mailslot device\n" );
 }
 
 static struct object *mailslot_device_lookup_name( struct object *obj, struct unicode_str *name,
@@ -452,7 +452,7 @@ static void mailslot_device_file_dump( struct object *obj, int verbose )
 {
     struct mailslot_device_file *file = (struct mailslot_device_file *)obj;
 
-    fprintf( stderr, "File on mailslot device %p\n", file->device );
+    SERVER_LOG( LOG_ALWAYS, "File on mailslot device %p\n", file->device );
 }
 
 static struct fd *mailslot_device_file_get_fd( struct object *obj )
@@ -517,7 +517,7 @@ static struct mailslot *create_mailslot( struct object *root,
 
 static void mail_writer_dump( struct object *obj, int verbose )
 {
-    fprintf( stderr, "Mailslot writer\n" );
+    SERVER_LOG( LOG_ALWAYS, "Mailslot writer\n" );
 }
 
 static void mail_writer_destroy( struct object *obj)

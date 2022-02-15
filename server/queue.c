@@ -1135,7 +1135,7 @@ static void msg_queue_remove_queue(struct object *obj, struct wait_queue_entry *
 static void msg_queue_dump( struct object *obj, int verbose )
 {
     struct msg_queue *queue = (struct msg_queue *)obj;
-    fprintf( stderr, "Msg queue bits=%x mask=%x\n",
+    SERVER_LOG( LOG_ALWAYS, "Msg queue bits=%x mask=%x\n",
              queue->wake_bits, queue->wake_mask );
 }
 
@@ -1237,7 +1237,7 @@ static void msg_queue_poll_event( struct fd *fd, int event )
 static void thread_input_dump( struct object *obj, int verbose )
 {
     struct thread_input *input = (struct thread_input *)obj;
-    fprintf( stderr, "Thread input focus=%08x capture=%08x active=%08x\n",
+    SERVER_LOG( LOG_ALWAYS, "Thread input focus=%08x capture=%08x active=%08x\n",
              input->shared->focus, input->shared->capture, input->shared->active );
 }
 
@@ -2554,8 +2554,7 @@ void post_win_event( struct thread *thread, unsigned int event,
             msg->data = data;
             msg->data_size = sizeof(*data) + module_size;
 
-            if (debug_level > 1)
-                fprintf( stderr, "post_win_event: tid %04x event %04x win %08x object_id %d child_id %d\n",
+            SERVER_LOG( LOG_VERBOSE, "post_win_event: tid %04x event %04x win %08x object_id %d child_id %d\n",
                          get_thread_id(thread), event, win, object_id, child_id );
             list_add_tail( &thread->queue->msg_list[SEND_MESSAGE], &msg->entry );
             set_queue_bits( thread->queue, QS_SENDMESSAGE );

@@ -365,9 +365,9 @@ static file_pos_t max_unix_offset = OFF_T_MAX;
 
 #define DUMP_LONG_LONG(val) do { \
     if (sizeof(val) > sizeof(unsigned long) && (val) > ~0UL) \
-        fprintf( stderr, "%lx%08lx", (unsigned long)((unsigned long long)(val) >> 32), (unsigned long)(val) ); \
+        SERVER_LOG( LOG_ALWAYS, "%lx%08lx", (unsigned long)((unsigned long long)(val) >> 32), (unsigned long)(val) ); \
     else \
-        fprintf( stderr, "%lx", (unsigned long)(val) ); \
+        SERVER_LOG( LOG_ALWAYS, "%lx", (unsigned long)(val) ); \
   } while (0)
 
 
@@ -1099,9 +1099,9 @@ static struct device *get_device( dev_t dev, int unix_fd )
 static void device_dump( struct object *obj, int verbose )
 {
     struct device *device = (struct device *)obj;
-    fprintf( stderr, "Device dev=" );
+    SERVER_LOG( LOG_ALWAYS, "Device dev=" );
     DUMP_LONG_LONG( device->dev );
-    fprintf( stderr, "\n" );
+    SERVER_LOG( LOG_ALWAYS, "\n" );
 }
 
 static void device_destroy( struct object *obj )
@@ -1147,9 +1147,9 @@ static void inode_close_pending( struct inode *inode, int keep_unlinks )
 static void inode_dump( struct object *obj, int verbose )
 {
     struct inode *inode = (struct inode *)obj;
-    fprintf( stderr, "Inode device=%p ino=", inode->device );
+    SERVER_LOG( LOG_ALWAYS, "Inode device=%p ino=", inode->device );
     DUMP_LONG_LONG( inode->ino );
-    fprintf( stderr, "\n" );
+    SERVER_LOG( LOG_ALWAYS, "\n" );
 }
 
 static void inode_destroy( struct object *obj )
@@ -1244,12 +1244,12 @@ static void inode_add_closed_fd( struct inode *inode, struct closed_fd *fd )
 static void file_lock_dump( struct object *obj, int verbose )
 {
     struct file_lock *lock = (struct file_lock *)obj;
-    fprintf( stderr, "Lock %s fd=%p proc=%p start=",
+    SERVER_LOG( LOG_ALWAYS, "Lock %s fd=%p proc=%p start=",
              lock->shared ? "shared" : "excl", lock->fd, lock->process );
     DUMP_LONG_LONG( lock->start );
-    fprintf( stderr, " end=" );
+    SERVER_LOG( LOG_ALWAYS, " end=" );
     DUMP_LONG_LONG( lock->end );
-    fprintf( stderr, "\n" );
+    SERVER_LOG( LOG_ALWAYS, "\n" );
 }
 
 static int file_lock_signaled( struct object *obj, struct wait_queue_entry *entry )
@@ -1571,9 +1571,9 @@ void unlock_fd( struct fd *fd, file_pos_t start, file_pos_t count )
 static void fd_dump( struct object *obj, int verbose )
 {
     struct fd *fd = (struct fd *)obj;
-    fprintf( stderr, "Fd unix_fd=%d user=%p options=%08x", fd->unix_fd, fd->user, fd->options );
-    if (fd->inode) fprintf( stderr, " inode=%p unlink=%d", fd->inode, fd->closed->unlink );
-    fprintf( stderr, "\n" );
+    SERVER_LOG( LOG_ALWAYS, "Fd unix_fd=%d user=%p options=%08x", fd->unix_fd, fd->user, fd->options );
+    if (fd->inode) SERVER_LOG( LOG_ALWAYS, " inode=%p unlink=%d", fd->inode, fd->closed->unlink );
+    SERVER_LOG( LOG_ALWAYS, "\n" );
 }
 
 static void fd_destroy( struct object *obj )

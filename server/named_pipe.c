@@ -333,7 +333,7 @@ static const struct fd_ops named_pipe_device_fd_ops =
 
 static void named_pipe_dump( struct object *obj, int verbose )
 {
-    fputs( "Named pipe\n", stderr );
+    SERVER_LOG( LOG_ALWAYS, "Named pipe\n" );
 }
 
 static unsigned int named_pipe_map_access( struct object *obj, unsigned int access )
@@ -358,7 +358,7 @@ static void pipe_server_dump( struct object *obj, int verbose )
 {
     struct pipe_server *server = (struct pipe_server *) obj;
     assert( obj->ops == &pipe_server_ops );
-    fprintf( stderr, "Named pipe server pipe=%p state=%d\n", server->pipe_end.pipe,
+    SERVER_LOG( LOG_ALWAYS, "Named pipe server pipe=%p state=%d\n", server->pipe_end.pipe,
              server->pipe_end.state );
 }
 
@@ -366,7 +366,7 @@ static void pipe_client_dump( struct object *obj, int verbose )
 {
     struct pipe_end *client = (struct pipe_end *) obj;
     assert( obj->ops == &pipe_client_ops );
-    fprintf( stderr, "Named pipe client server=%p\n", client->connection );
+    SERVER_LOG( LOG_ALWAYS, "Named pipe client server=%p\n", client->connection );
 }
 
 static void named_pipe_destroy( struct object *obj)
@@ -498,7 +498,7 @@ static void pipe_server_destroy( struct object *obj )
 
 static void named_pipe_device_dump( struct object *obj, int verbose )
 {
-    fputs( "Named pipe device\n", stderr );
+    SERVER_LOG( LOG_ALWAYS, "Named pipe device\n" );
 }
 
 static struct object *named_pipe_device_lookup_name( struct object *obj, struct unicode_str *name,
@@ -563,7 +563,7 @@ static void named_pipe_device_file_dump( struct object *obj, int verbose )
 {
     struct named_pipe_device_file *file = (struct named_pipe_device_file *)obj;
 
-    fprintf( stderr, "File on named pipe device %p\n", file->device );
+    SERVER_LOG( LOG_ALWAYS, "File on named pipe device %p\n", file->device );
 }
 
 static struct fd *named_pipe_device_file_get_fd( struct object *obj )

@@ -107,8 +107,8 @@ static int handle_child_status( struct thread *thread, int pid, int status, int 
     if (WIFSTOPPED(status))
     {
         int sig = WSTOPSIG(status);
-        if (debug_level && thread)
-            fprintf( stderr, "%04x: *signal* signal=%d\n", thread->id, sig );
+        if (thread)
+            SERVER_LOG( LOG_DEBUG, "%04x: *signal* signal=%d\n", thread->id, sig );
         if (sig != want_sig)
         {
             /* ignore other signals for now */
@@ -120,15 +120,13 @@ static int handle_child_status( struct thread *thread, int pid, int status, int 
     {
         thread->unix_pid = -1;
         thread->unix_tid = -1;
-        if (debug_level)
-        {
-            if (WIFSIGNALED(status))
-                fprintf( stderr, "%04x: *exited* signal=%d\n",
-                         thread->id, WTERMSIG(status) );
-            else
-                fprintf( stderr, "%04x: *exited* status=%d\n",
-                         thread->id, WEXITSTATUS(status) );
-        }
+
+        if (WIFSIGNALED(status))
+            SERVER_LOG( LOG_DEBUG, "%04x: *exited* signal=%d\n",
+                     thread->id, WTERMSIG(status) );
+        else
+            SERVER_LOG( LOG_DEBUG, "%04x: *exited* status=%d\n",
+                     thread->id, WEXITSTATUS(status) );
     }
     return 0;
 }
@@ -180,7 +178,7 @@ static int waitpid_thread( struct thread *thread, int signal )
             if (errno == EINTR)
             {
                 if (!watchdog_triggered()) continue;
-                if (debug_level) fprintf( stderr, "%04x: *watchdog* waitpid aborted\n", thread->id );
+                SERVER_LOG( LOG_DEBUG, "%04x: *watchdog* waitpid aborted\n", thread->id );
             }
             else if (errno == ECHILD)  /* must have died */
             {
@@ -250,8 +248,8 @@ int send_thread_signal( struct thread *thread, int sig )
             thread->unix_tid = -1;
         }
     }
-    if (debug_level && ret != -1)
-        fprintf( stderr, "%04x: *sent signal* signal=%d\n", thread->id, sig );
+    if (ret != -1)
+        SERVER_LOG( LOG_DEBUG, "%04x: *sent signal* signal=%d\n", thread->id, sig );
     return (ret != -1);
 }
 

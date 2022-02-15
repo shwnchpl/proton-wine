@@ -142,7 +142,7 @@ static void do_signal( struct handler *handler )
 static void handler_dump( struct object *obj, int verbose )
 {
     struct handler *handler = (struct handler *)obj;
-    fprintf( stderr, "Signal handler fd=%p\n", handler->fd );
+    SERVER_LOG( LOG_ALWAYS, "Signal handler fd=%p\n", handler->fd );
 }
 
 static void handler_destroy( struct object *obj )
@@ -159,7 +159,7 @@ static void handler_poll_event( struct fd *fd, int event )
     if (event & (POLLERR | POLLHUP))
     {
         /* this is not supposed to happen */
-        fprintf( stderr, "wineserver: Error on signal handler pipe\n" );
+        SERVER_LOG( LOG_ALWAYS, "wineserver: Error on signal handler pipe\n" );
         release_object( handler );
     }
     else if (event & POLLIN)
@@ -226,7 +226,7 @@ static void do_sigchld( int signum )
 /* SIGSEGV handler */
 static void do_sigsegv( int signum )
 {
-    fprintf( stderr, "wineserver crashed, please enable coredumps (ulimit -c unlimited) and restart.\n");
+    SERVER_LOG( LOG_ALWAYS, "wineserver crashed, please enable coredumps (ulimit -c unlimited) and restart.\n");
     abort();
 }
 
@@ -321,6 +321,6 @@ void init_signals(void)
     return;
 
 error:
-    fprintf( stderr, "failed to initialize signal handlers\n" );
+    SERVER_LOG( LOG_ALWAYS, "failed to initialize signal handlers\n" );
     exit(1);
 }

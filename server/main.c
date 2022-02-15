@@ -38,7 +38,7 @@
 #include "fsync.h"
 
 /* command-line options */
-int debug_level = 0;
+int debug_log_level = 0;
 int foreground = 0;
 timeout_t master_socket_timeout = 0; /* master socket timeout, default is 3 seconds */
 const char *server_argv0;
@@ -49,7 +49,7 @@ static void usage( FILE *fh )
 {
     fprintf(fh, "Usage: %s [options]\n\n", server_argv0);
     fprintf(fh, "Options:\n");
-    fprintf(fh, "   -d[n], --debug[=n]       set debug level to n or +1 if n not specified\n");
+    fprintf(fh, "   -d[n], --debug[=n]       set debug log level to n or +1 if n not specified\n");
     fprintf(fh, "   -f,    --foreground      remain in the foreground for debugging\n");
     fprintf(fh, "   -h,    --help            display this help message\n");
     fprintf(fh, "   -k[n], --kill[=n]        kill the current wineserver, optionally with signal n\n");
@@ -67,9 +67,9 @@ static void option_callback( int optc, char *optarg )
     {
     case 'd':
         if (optarg && isdigit(*optarg))
-            debug_level = atoi( optarg );
+            debug_log_level = atoi( optarg );
         else
-            debug_level++;
+            debug_log_level++;
         break;
     case 'f':
         foreground = 1;
@@ -238,9 +238,9 @@ int main( int argc, char *argv[] )
         esync_init();
 
     if (!do_fsync() && !do_esync())
-        fprintf( stderr, "wineserver: using server-side synchronization.\n" );
+        SERVER_LOG( LOG_ALWAYS, "wineserver: using server-side synchronization.\n" );
 
-    if (debug_level) fprintf( stderr, "wineserver: starting (pid=%ld)\n", (long) getpid() );
+    SERVER_LOG( LOG_DEBUG , "wineserver: starting (pid=%ld)\n", (long) getpid() );
     set_current_time();
     init_signals();
     init_directories( load_intl_file() );

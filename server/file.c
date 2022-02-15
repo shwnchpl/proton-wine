@@ -290,7 +290,7 @@ static void file_dump( struct object *obj, int verbose )
 {
     struct file *file = (struct file *)obj;
     assert( obj->ops == &file_ops );
-    fprintf( stderr, "File fd=%p\n", file->fd );
+    SERVER_LOG( LOG_ALWAYS, "File fd=%p\n", file->fd );
 }
 
 static enum server_fd_type file_get_fd_type( struct fd *fd )

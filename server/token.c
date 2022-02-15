@@ -185,7 +185,7 @@ static void token_dump( struct object *obj, int verbose )
 {
     struct token *token = (struct token *)obj;
     assert( obj->ops == &token_ops );
-    fprintf( stderr, "Token id=%d.%u primary=%u impersonation level=%d\n", token->token_id.high_part,
+    SERVER_LOG( LOG_ALWAYS, "Token id=%d.%u primary=%u impersonation level=%d\n", token->token_id.high_part,
              token->token_id.low_part, token->primary, token->impersonation_level );
 }
 
