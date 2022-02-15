@@ -69,11 +69,18 @@ unsigned char __wine_dbg_get_channel_flags_obsolete( struct __wine_debug_channel
 {
     if (nb_debug_options == -1) debug_init();
 
+    if (!(channel->log_flags & (1 << __WINE_DBCL_INIT)))
+        return channel->log_flags;
+
     if (nb_debug_options)
     {
-        struct __wine_debug_channel *opt = bsearch( channel->name, debug_options, nb_debug_options,
-                                                    sizeof(debug_options[0]), cmp_name );
-        if (opt) return opt->log_flags;
+        struct __wine_debug_option *opt = bsearch( channel->name, debug_options, nb_debug_options,
+                                            sizeof(debug_options[0]), cmp_name );
+        if (opt)
+        {
+            channel->log_flags = opt->flags;
+            return opt->flags;
+        }
     }
     /* no option for this channel */
     if (channel->log_flags & (1 << __WINE_DBCL_INIT))
