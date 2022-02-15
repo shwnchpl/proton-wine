@@ -1109,7 +1109,7 @@ BOOL parse_templates(parse_buffer * buf, BOOL templates_only)
     else
     {
       TRACE("Template successfully parsed:\n");
-      if (TRACE_ON(d3dxof_parsing))
+      if (TRACE_LOG_ON(d3dxof_parsing))
         dump_template(buf->pdxf->xtemplates, &buf->pdxf->xtemplates[buf->pdxf->nb_xtemplates - 1]);
     }
   }
