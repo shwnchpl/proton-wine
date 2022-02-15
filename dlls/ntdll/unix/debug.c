@@ -313,13 +313,16 @@ int __cdecl __wine_dbg_log_output( const char *str )
  *		__wine_dbg_header  (NTDLL.@)
  */
 int __cdecl __wine_dbg_header( enum __wine_debug_class cls, struct __wine_debug_channel *channel,
-                               const char *function )
+                               const char *function, enum __wine_debug_target target )
 {
     static const char * const classes[] = { "fixme", "err", "warn", "trace" };
     struct debug_info *info = get_info();
     char *pos = info->output;
 
-    if (!(__wine_dbg_get_channel_flags( channel, __WINE_DBTRG_LOG ) & (1 << cls)))
+    if (target != __WINE_DBTRG_LOG)
+        return -1;
+
+    if (!(__wine_dbg_get_channel_flags( channel, target ) & (1 << cls)))
         return -1;
 
     /* only print header if we are at the beginning of the line */
