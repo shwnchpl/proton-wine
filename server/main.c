@@ -39,6 +39,7 @@
 
 /* command-line options */
 int debug_log_level = 0;
+int debug_mark_level = -1;
 int foreground = 0;
 timeout_t master_socket_timeout = 0; /* master socket timeout, default is 3 seconds */
 const char *server_argv0;
@@ -50,6 +51,7 @@ static void usage( FILE *fh )
     fprintf(fh, "Usage: %s [options]\n\n", server_argv0);
     fprintf(fh, "Options:\n");
     fprintf(fh, "   -d[n], --debug[=n]       set debug log level to n or +1 if n not specified\n");
+    fprintf(fh, "   -m[n], --mark[=n]        set debug mark level to n or +1 if n not specified\n");
     fprintf(fh, "   -f,    --foreground      remain in the foreground for debugging\n");
     fprintf(fh, "   -h,    --help            display this help message\n");
     fprintf(fh, "   -k[n], --kill[=n]        kill the current wineserver, optionally with signal n\n");
@@ -70,6 +72,15 @@ static void option_callback( int optc, char *optarg )
             debug_log_level = atoi( optarg );
         else
             debug_log_level++;
+        break;
+    case 'm':
+        if (optarg)
+        {
+            if (isdigit(*optarg))
+                debug_mark_level = atoi( optarg );
+            else
+                debug_mark_level = 1;
+        }
         break;
     case 'f':
         foreground = 1;
@@ -110,6 +121,7 @@ static struct long_option
 } long_options[] =
 {
     {"debug",       2, 'd'},
+    {"mark",        2, 'm'},
     {"foreground",  0, 'f'},
     {"help",        0, 'h'},
     {"kill",        2, 'k'},
@@ -218,7 +230,7 @@ int main( int argc, char *argv[] )
 {
     setvbuf( stderr, NULL, _IOLBF, 0 );
     server_argv0 = argv[0];
-    parse_options( argc, argv, "d::fhk::p::vw", long_options, option_callback );
+    parse_options( argc, argv, "d::m::fhk::p::vw", long_options, option_callback );
 
     /* setup temporary handlers before the real signal initialization is done */
     signal( SIGPIPE, SIG_IGN );

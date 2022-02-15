@@ -137,6 +137,7 @@ void fatal_protocol_error( struct thread *thread, const char *err, ... )
 
     va_start( args, err );
     SERVER_LOG( LOG_ALWAYS, "Protocol error:%04x: ", thread->id );
+    /* FIXME: Mark when necessary. */
     vfprintf( stderr, err, args );
     va_end( args );
     thread->exit_code = 1;
@@ -150,6 +151,7 @@ void fatal_error( const char *err, ... )
 
     va_start( args, err );
     SERVER_LOG( LOG_ALWAYS, "wineserver: " );
+    /* FIXME: Mark when necessary. */
     vfprintf( stderr, err, args );
     va_end( args );
     exit(1);
@@ -301,7 +303,7 @@ static void call_req_handler( struct thread *thread )
     clear_error();
     memset( &reply, 0, sizeof(reply) );
 
-    if (debug_log_level)
+    if (debug_log_level || debug_mark_level)
         trace_request();
 
     if (req < REQ_NB_REQUESTS)
@@ -315,7 +317,7 @@ static void call_req_handler( struct thread *thread )
         {
             reply.reply_header.error = current->error;
             reply.reply_header.reply_size = current->reply_size;
-            if (debug_log_level)
+            if (debug_log_level || debug_mark_level)
                 trace_reply( req, &reply );
             send_reply( &reply );
         }

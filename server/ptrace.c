@@ -107,7 +107,7 @@ static int handle_child_status( struct thread *thread, int pid, int status, int 
     if (WIFSTOPPED(status))
     {
         int sig = WSTOPSIG(status);
-        if (thread)
+        if ((debug_log_level || debug_mark_level) && thread)
             SERVER_LOG( LOG_DEBUG, "%04x: *signal* signal=%d\n", thread->id, sig );
         if (sig != want_sig)
         {

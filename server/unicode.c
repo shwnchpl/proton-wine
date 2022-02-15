@@ -196,6 +196,9 @@ int parse_strW( WCHAR *buffer, data_size_t *len, const char *src, char endchar )
 /* dump a Unicode string with proper escaping */
 int dump_strW( const WCHAR *str, data_size_t len, FILE *f, const char escape[2] )
 {
+    /* FIXME: In many contexts, the usage of this function results in
+       a disparity between log and mark output. This should be
+       resolved. */
     static const char escapes[32] = ".......abtnvfr.............e....";
     char buffer[256];
     char *pos = buffer;

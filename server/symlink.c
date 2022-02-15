@@ -91,6 +91,8 @@ static const struct object_ops symlink_ops =
 
 static void symlink_dump( struct object *obj, int verbose )
 {
+    /* FIXME: Improve logging when trace marking. */
+
     struct symlink *symlink = (struct symlink *)obj;
     assert( obj->ops == &symlink_ops );
 

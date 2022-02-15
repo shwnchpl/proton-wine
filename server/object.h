@@ -297,10 +297,14 @@ extern struct object *create_symlink( struct object *root, const struct unicode_
                                       unsigned int attr, const struct unicode_str *target,
                                       const struct security_descriptor *sd );
 
+/* server trace functions */
+void server_mark(const char *format, va_list args);
+
 /* global variables */
 
   /* command-line options */
 extern int debug_log_level;
+extern int debug_mark_level;
 extern int foreground;
 extern timeout_t master_socket_timeout;
 extern const char *server_argv0;
@@ -339,10 +343,22 @@ extern struct type_descr key_type;
 #define LOG_DEBUG   1
 #define LOG_VERBOSE 2
 
-#define SERVER_LOG(l_, ...)   \
-    do {    \
-        if (debug_log_level >= l_)  \
-            fprintf(stderr, __VA_ARGS__);  \
-    } while (0)
+static inline void SERVER_LOG(int level, const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+
+    if (debug_log_level >= level) {
+        vfprintf(stderr, fmt, args);
+
+        va_end(args);
+        va_start(args, fmt);
+    }
+    if (debug_mark_level >= level)
+        server_mark(fmt, args);
+
+    va_end(args);
+}
 
 #endif  /* __WINE_SERVER_OBJECT_H */

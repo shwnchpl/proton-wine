@@ -499,7 +499,7 @@ DECL_HANDLER(get_fsync_idx)
     }
     else
     {
-        if (debug_log_level)
+        if (debug_log_level || debug_mark_level)
         {
             SERVER_LOG( LOG_DEBUG, "%04x: fsync: can't wait on object: ", current->id );
             obj->ops->dump( obj, 0 );

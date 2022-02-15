@@ -568,7 +568,7 @@ DECL_HANDLER(get_esync_fd)
     }
     else
     {
-        if (debug_log_level)
+        if (debug_log_level || debug_mark_level)
         {
             SERVER_LOG( LOG_DEBUG, "%04x: esync: can't wait on object: ", current->id );
             obj->ops->dump( obj, 0 );

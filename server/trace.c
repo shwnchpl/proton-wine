@@ -918,6 +918,7 @@ static data_size_t dump_inline_unicode_string( const char *prefix, data_size_t p
 
 static void dump_varargs_startup_info( const char *prefix, data_size_t size )
 {
+    /* FIXME: Improve startup info dump when trace marking. */
     startup_info_t info;
     data_size_t pos = sizeof(info);
 

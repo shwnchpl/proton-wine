@@ -304,6 +304,7 @@ static void save_subkeys( const struct key *key, const struct key *base, FILE *f
 
 static void dump_operation( const struct key *key, const struct key_value *value, const char *op )
 {
+    /* FIXME: Improve trace marking behavior. */
     SERVER_LOG( LOG_VERBOSE, "%s key ", op );
     if (key && debug_log_level > 1) dump_path( key, NULL, stderr );
     else SERVER_LOG( LOG_VERBOSE, "ERROR" );
@@ -803,7 +804,7 @@ static struct key *open_key( struct key *key, const struct unicode_str *name, un
         set_error( STATUS_OBJECT_NAME_NOT_FOUND );
         return NULL;
     }
-    if (debug_log_level > 1)
+    if (debug_log_level > 1 || debug_mark_level > 1)
         dump_operation( key, NULL, "Open" );
     if (key->flags & KEY_PREDEF) set_error( STATUS_PREDEFINED_HANDLE );
     grab_object( key );
@@ -835,7 +836,7 @@ static struct key *create_key( struct key *key, const struct unicode_str *name,
             set_error( STATUS_OBJECT_NAME_NOT_FOUND );
             return NULL;
         }
-        if (debug_log_level > 1)
+        if (debug_log_level > 1 || debug_mark_level > 1)
             dump_operation( key, NULL, "Open" );
         if (key->flags & KEY_PREDEF) set_error( STATUS_PREDEFINED_HANDLE );
         grab_object( key );
@@ -867,7 +868,7 @@ static struct key *create_key( struct key *key, const struct unicode_str *name,
     if (sd) default_set_sd( &key->obj, sd, OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION |
                             DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION );
 
-    if (debug_log_level > 1)
+    if (debug_log_level > 1 || debug_mark_level > 1)
         dump_operation( key, NULL, "Create" );
     if (class && class->len)
     {
@@ -1017,7 +1018,7 @@ static void enum_key( struct key *key, int index, int info_class, struct enum_ke
         }
     }
     free( fullname );
-    if (debug_log_level > 1)
+    if (debug_log_level > 1 || debug_mark_level > 1)
         dump_operation( key, NULL, "Enum" );
 }
 
@@ -1056,7 +1057,7 @@ static int delete_key( struct key *key, int recurse )
         return -1;
     }
 
-    if (debug_log_level > 1)
+    if (debug_log_level > 1 || debug_mark_level > 1)
         dump_operation( key, NULL, "Delete" );
     free_subkey( parent, index );
     touch_key( parent, REG_NOTIFY_CHANGE_NAME );
@@ -1160,7 +1161,7 @@ static void set_value( struct key *key, const struct unicode_str *name,
         if (value->type == type && value->len == len &&
             value->data && !memcmp( value->data, data, len ))
         {
-            if (debug_log_level > 1)
+            if (debug_log_level > 1 || debug_mark_level > 1)
                 dump_operation( key, value, "Skip setting" );
             return;
         }
@@ -1192,7 +1193,7 @@ static void set_value( struct key *key, const struct unicode_str *name,
     value->len   = len;
     value->data  = ptr;
     touch_key( key, REG_NOTIFY_CHANGE_LAST_SET );
-    if (debug_log_level > 1)
+    if (debug_log_level > 1 || debug_mark_level > 1)
         dump_operation( key, value, "Set" );
 }
 
@@ -1213,7 +1214,7 @@ static void get_value( struct key *key, const struct unicode_str *name, int *typ
         *type = value->type;
         *len  = value->len;
         if (value->data) set_reply_data( value->data, min( value->len, get_reply_max_size() ));
-        if (debug_log_level > 1)
+        if (debug_log_level > 1 || debug_mark_level > 1)
             dump_operation( key, value, "Get" );
     }
     else
@@ -1276,7 +1277,7 @@ static void enum_value( struct key *key, int i, int info_class, struct enum_key_
                 memcpy( data, value->name, maxlen );
             }
         }
-        if (debug_log_level > 1)
+        if (debug_log_level > 1 || debug_mark_level > 1)
             dump_operation( key, value, "Enum" );
     }
 }
@@ -1298,7 +1299,7 @@ static void delete_value( struct key *key, const struct unicode_str *name )
         set_error( STATUS_OBJECT_NAME_NOT_FOUND );
         return;
     }
-    if (debug_log_level > 1)
+    if (debug_log_level > 1 || debug_mark_level > 1)
         dump_operation( key, value, "Delete" );
     free( value->name );
     free( value->data );
@@ -2038,7 +2039,7 @@ static int save_branch( struct key *key, const char *path )
 
     if (!(key->flags & KEY_DIRTY))
     {
-        if (debug_log_level > 1)
+        if (debug_log_level > 1 || debug_mark_level > 1)
             dump_operation( key, NULL, "Not saving clean" );
         return 1;
     }
@@ -2081,7 +2082,7 @@ static int save_branch( struct key *key, const char *path )
         goto done;
     }
 
-    if (debug_log_level)
+    if (debug_log_level || debug_mark_level)
     {
         SERVER_LOG( LOG_DEBUG, "%s: ", path );
         dump_operation( key, NULL, "saving" );
