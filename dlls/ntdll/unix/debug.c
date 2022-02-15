@@ -388,16 +388,18 @@ int __cdecl __wine_dbg_header( enum __wine_debug_class cls, struct __wine_debug_
 {
     static const char * const classes[] = { "fixme", "err", "warn", "trace" };
     struct debug_info *info = get_info();
-    char *pos = info->output;
-
-    if (target != __WINE_DBTRG_LOG)
-        return -1;
+    char buffer[200], *pos = buffer;
 
     if (!(__wine_dbg_get_channel_flags( channel, target ) & (1 << cls)))
         return -1;
 
     /* only print header if we are at the beginning of the line */
-    if (info->out_pos) return 0;
+    if (target == __WINE_DBTRG_MARK)
+    {
+        if (mark_fd < 0) return -1;
+        else if (info->mark_pos) return 0;
+    }
+    else if (info->out_pos) return 0;
 
     if (init_done)
     {
@@ -417,10 +419,13 @@ int __cdecl __wine_dbg_header( enum __wine_debug_class cls, struct __wine_debug_
         pos += sprintf( pos, "%04x:", GetCurrentThreadId() );
     }
     if (function && cls < ARRAY_SIZE( classes ))
-        pos += snprintf( pos, sizeof(info->output) - (pos - info->output), "%s:%s:%s ",
-                         classes[cls], channel->name, function );
-    info->out_pos = pos - info->output;
-    return info->out_pos;
+        snprintf( pos, sizeof(buffer) - (pos - buffer), "%s:%s:%s ",
+                  classes[cls], channel->name, function );
+
+    if (target == __WINE_DBTRG_MARK)
+        return append_mark( info, buffer, strlen( buffer ));
+
+    return append_output( info, buffer, strlen( buffer ));
 }
 
 /***********************************************************************
