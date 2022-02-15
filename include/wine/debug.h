@@ -478,23 +478,27 @@ static inline const char *wine_dbgstr_variant( const VARIANT *v )
 #define WINE_TRACE                 __WINE_DPRINTF(_TRACE,__wine_dbch___default)
 #define WINE_TRACE_(ch)            __WINE_DPRINTF(_TRACE,&__wine_dbch_##ch)
 #endif
-#define WINE_TRACE_ON(ch)          __WINE_IS_DEBUG_ON(_TRACE,&__wine_dbch_##ch)
+#define WINE_TRACE_LOG_ON(ch)      __WINE_IS_DEBUG_ON(_TRACE,&__wine_dbch_##ch)
+#define WINE_TRACE_ON(ch)          (WINE_TRACE_LOG_ON(ch))
 
 #ifndef WINE_WARN
 #define WINE_WARN                  __WINE_DPRINTF(_WARN,__wine_dbch___default)
 #define WINE_WARN_(ch)             __WINE_DPRINTF(_WARN,&__wine_dbch_##ch)
 #endif
-#define WINE_WARN_ON(ch)           __WINE_IS_DEBUG_ON(_WARN,&__wine_dbch_##ch)
+#define WINE_WARN_LOG_ON(ch)       __WINE_IS_DEBUG_ON(_WARN,&__wine_dbch_##ch)
+#define WINE_WARN_ON(ch)           (WINE_WARN_LOG_ON(ch))
 
 #ifndef WINE_FIXME
 #define WINE_FIXME                 __WINE_DPRINTF(_FIXME,__wine_dbch___default)
 #define WINE_FIXME_(ch)            __WINE_DPRINTF(_FIXME,&__wine_dbch_##ch)
 #endif
-#define WINE_FIXME_ON(ch)          __WINE_IS_DEBUG_ON(_FIXME,&__wine_dbch_##ch)
+#define WINE_FIXME_LOG_ON(ch)      __WINE_IS_DEBUG_ON(_FIXME,&__wine_dbch_##ch)
+#define WINE_FIXME_ON(ch)          (WINE_FIXME_LOG_ON(ch))
 
 #define WINE_ERR                   __WINE_DPRINTF(_ERR,__wine_dbch___default)
 #define WINE_ERR_(ch)              __WINE_DPRINTF(_ERR,&__wine_dbch_##ch)
-#define WINE_ERR_ON(ch)            __WINE_IS_DEBUG_ON(_ERR,&__wine_dbch_##ch)
+#define WINE_ERR_LOG_ON(ch)        __WINE_IS_DEBUG_ON(_ERR,&__wine_dbch_##ch)
+#define WINE_ERR_ON(ch)            (WINE_ERR_LOG_ON(ch))
 
 #define WINE_DECLARE_DEBUG_CHANNEL(ch) \
     static struct __wine_debug_channel __wine_dbch_##ch = { 0xff, #ch }
@@ -520,19 +524,23 @@ static inline const char *debugstr_variant( const VARIANT *v ) { return wine_dbg
 
 #define TRACE                      WINE_TRACE
 #define TRACE_(ch)                 WINE_TRACE_(ch)
+#define TRACE_LOG_ON(ch)           WINE_TRACE_LOG_ON(ch)
 #define TRACE_ON(ch)               WINE_TRACE_ON(ch)
 
 #define WARN                       WINE_WARN
 #define WARN_(ch)                  WINE_WARN_(ch)
+#define WARN_LOG_ON(ch)            WINE_WARN_LOG_ON(ch)
 #define WARN_ON(ch)                WINE_WARN_ON(ch)
 
 #define FIXME                      WINE_FIXME
 #define FIXME_(ch)                 WINE_FIXME_(ch)
+#define FIXME_LOG_ON(ch)           WINE_FIXME_LOG_ON(ch)
 #define FIXME_ON(ch)               WINE_FIXME_ON(ch)
 
 #undef ERR  /* Solaris got an 'ERR' define in <sys/reg.h> */
 #define ERR                        WINE_ERR
 #define ERR_(ch)                   WINE_ERR_(ch)
+#define ERR_LOG_ON(ch)             WINE_ERR_LOG_ON(ch)
 #define ERR_ON(ch)                 WINE_ERR_ON(ch)
 
 #define MESSAGE                    WINE_MESSAGE
